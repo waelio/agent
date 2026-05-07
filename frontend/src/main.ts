@@ -1,130 +1,89 @@
 import "./style.css";
 import { setupPwa } from "./pwa";
 
-const APP = import.meta.env.VITE_AGENT_APP_NAME?.trim() || "Agent";
-const API_STORAGE_KEY = "waelio-agent-api-base-url";
-const USER_STORAGE_KEY = "waelio-agent-user-id";
-const FRONTEND_ONLY_AGENT_HOSTS = new Set(["waelio-agent.pages.dev"]);
+const APP_NAME = import.meta.env.VITE_AGENT_APP_NAME?.trim() || "Agent";
+const API_KEY_STORAGE_KEY = "waelio-agent-gemini-api-key";
+const MODEL_NAME = "gemini-2.5-flash";
+const SYSTEM_INSTRUCTION = "You help users research topics thoroughly.";
 
 function normalizePathname(pathname: string): string {
   const normalized = pathname.replace(/\/+$/, "");
   return normalized === "" ? "/" : normalized;
 }
 
-function normalizeApiUrl(url: string): string {
-  return url.replace(/\/+$/, "");
-}
-
-function getApiBaseUrlProblem(url: string): string | null {
-  const trimmed = url.trim();
-  if (!trimmed) {
-    return "Enter the agent server URL.";
-  }
-
-  let parsed: URL;
+function readStoredApiKey(): string {
   try {
-    parsed = new URL(trimmed);
-  } catch {
-    return "Enter a full server URL starting with http:// or https://.";
-  }
-
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    return "Use an http:// or https:// server URL.";
-  }
-
-  if (FRONTEND_ONLY_AGENT_HOSTS.has(parsed.hostname)) {
-    return `${parsed.hostname} is the app site, not the agent server.`;
-  }
-
-  return null;
-}
-
-function getEnvApiBaseUrl(): string {
-  const envValue = import.meta.env.VITE_API_BASE_URL?.trim();
-  if (envValue && !getApiBaseUrlProblem(envValue)) {
-    return normalizeApiUrl(envValue);
-  }
-
-  return "";
-}
-
-function readStoredApiBaseUrl(): string {
-  try {
-    const storedValue = window.localStorage.getItem(API_STORAGE_KEY)?.trim();
-    if (!storedValue) {
-      return "";
-    }
-
-    if (getApiBaseUrlProblem(storedValue)) {
-      window.localStorage.removeItem(API_STORAGE_KEY);
-      return "";
-    }
-
-    return normalizeApiUrl(storedValue);
+    return window.localStorage.getItem(API_KEY_STORAGE_KEY)?.trim() ?? "";
   } catch {
     return "";
   }
 }
 
-function writeStoredApiBaseUrl(url: string): void {
+function writeStoredApiKey(apiKey: string): void {
   try {
-    if (url) {
-      window.localStorage.setItem(API_STORAGE_KEY, url);
+    if (apiKey) {
+      window.localStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
     } else {
-      window.localStorage.removeItem(API_STORAGE_KEY);
+      window.localStorage.removeItem(API_KEY_STORAGE_KEY);
     }
   } catch {
     // Ignore storage failures.
   }
 }
 
-function isUsingCustomApiBaseUrl(): boolean {
-  return readStoredApiBaseUrl() !== "";
-}
-
-function isUsingLiveAgentServer(): boolean {
-  return apiBaseUrl !== "" && !isUsingCustomApiBaseUrl();
-}
-
-function getDefaultApiBaseUrl(): string {
-  const envValue = getEnvApiBaseUrl();
-  if (envValue) {
-    return envValue;
+function getApiKeyProblem(apiKey: string): string | null {
+  const trimmed = apiKey.trim();
+  if (!trimmed) {
+    return "Enter your Google AI Studio API key.";
   }
 
-  const { hostname } = window.location;
-  if (hostname === "localhost" || hostname === "127.0.0.1") {
-    return "http://localhost:8000";
+  if (/\s/.test(trimmed)) {
+    return "Paste the API key without spaces or line breaks.";
   }
 
-  return "";
+  return null;
 }
 
-function resolveApiBaseUrl(): string {
-  return readStoredApiBaseUrl() || getDefaultApiBaseUrl();
+interface GeminiPart {
+  text?: string;
 }
 
-function createFallbackUserId(): string {
-  return `guest-${Math.random().toString(36).slice(2, 10)}`;
+interface GeminiContent {
+  role: "user" | "model";
+  parts: Array<{ text: string }>;
 }
 
-function getUserId(): string {
-  try {
-    const existing = window.localStorage.getItem(USER_STORAGE_KEY);
-    if (existing) {
-      return existing;
-    }
-
-    const next = window.crypto?.randomUUID?.() ?? createFallbackUserId();
-    window.localStorage.setItem(USER_STORAGE_KEY, next);
-    return next;
-  } catch {
-    return createFallbackUserId();
-  }
+interface GeminiGroundingChunk {
+  web?: {
+    uri?: string;
+    title?: string;
+  };
 }
 
-let apiBaseUrl = resolveApiBaseUrl();
-const USER = getUserId();
+interface GeminiCandidate {
+  content?: {
+    parts?: GeminiPart[];
+  };
+  finishReason?: string;
+  groundingMetadata?: {
+    groundingChunks?: GeminiGroundingChunk[];
+  };
+}
+
+interface GeminiApiErrorResponse {
+  error?: {
+    code?: number;
+    status?: string;
+    message?: string;
+  };
+}
+
+interface GeminiResponse extends GeminiApiErrorResponse {
+  candidates?: GeminiCandidate[];
+  promptFeedback?: {
+    blockReason?: string;
+  };
+}
 
 function syncDrawerLinks(activePath: string): void {
   const links = document.querySelectorAll<HTMLAnchorElement>(".drawer-link[data-path]");
@@ -156,13 +115,155 @@ function renderEmptySocialPage(): void {
   document.title = "Social";
 }
 
+function extractText(candidate: GeminiCandidate | undefined): string {
+  const parts = candidate?.content?.parts ?? [];
+  return parts
+    .map((part) => part.text?.trim() ?? "")
+    .filter((part) => part.length > 0)
+    .join("\n\n")
+    .trim();
+}
+
+function appendSources(text: string, candidate: GeminiCandidate | undefined): string {
+  const chunks = candidate?.groundingMetadata?.groundingChunks ?? [];
+  const seen = new Set<string>();
+  const sources: Array<{ title: string; uri: string }> = [];
+
+  for (const chunk of chunks) {
+    const uri = chunk.web?.uri?.trim();
+    if (!uri || seen.has(uri)) {
+      continue;
+    }
+
+    seen.add(uri);
+    sources.push({ title: chunk.web?.title?.trim() || uri, uri });
+
+    if (sources.length >= 6) {
+      break;
+    }
+  }
+
+  if (sources.length === 0) {
+    return text;
+  }
+
+  const suffix = sources
+    .map((source, index) => `${index + 1}. ${source.title} — ${source.uri}`)
+    .join("\n");
+
+  return `${text}\n\nSources:\n${suffix}`;
+}
+
+function getFriendlyGeminiError(status: number, bodyText: string): string {
+  let payload: GeminiApiErrorResponse | undefined;
+
+  try {
+    payload = JSON.parse(bodyText) as GeminiApiErrorResponse;
+  } catch {
+    payload = undefined;
+  }
+
+  const detailedMessage = payload?.error?.message?.trim() ?? "";
+  const normalizedMessage = `${payload?.error?.status ?? ""} ${detailedMessage}`.toLowerCase();
+
+  if (
+    status === 401 ||
+    status === 403 ||
+    normalizedMessage.includes("api key") ||
+    normalizedMessage.includes("permission") ||
+    normalizedMessage.includes("unauth")
+  ) {
+    return "That API key didn't work. Check it and try again.";
+  }
+
+  if (
+    normalizedMessage.includes("quota") ||
+    normalizedMessage.includes("billing") ||
+    normalizedMessage.includes("rate") ||
+    normalizedMessage.includes("resource exhausted")
+  ) {
+    return "That API key hit a quota or billing limit. Try again later or use a different key.";
+  }
+
+  if (status >= 500) {
+    return "Google AI is unavailable right now. Please try again in a moment.";
+  }
+
+  if (detailedMessage) {
+    return detailedMessage;
+  }
+
+  return "Couldn't get a response from Google AI right now.";
+}
+
+async function generateReply(apiKey: string, contents: GeminiContent[]): Promise<{ modelText: string; displayText: string }> {
+  const endpoint = new URL(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent`);
+  endpoint.searchParams.set("key", apiKey);
+
+  let response: Response;
+
+  try {
+    response = await fetch(endpoint.toString(), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        systemInstruction: {
+          parts: [{ text: SYSTEM_INSTRUCTION }],
+        },
+        contents,
+        tools: [{ google_search: {} }],
+        generationConfig: {
+          responseMimeType: "text/plain",
+        },
+      }),
+    });
+  } catch {
+    throw new Error("Couldn't reach Google AI right now. Check your internet connection and try again.");
+  }
+
+  const bodyText = await response.text();
+  if (!response.ok) {
+    throw new Error(getFriendlyGeminiError(response.status, bodyText));
+  }
+
+  let payload: GeminiResponse;
+
+  try {
+    payload = JSON.parse(bodyText) as GeminiResponse;
+  } catch {
+    throw new Error("Google AI returned an unreadable response.");
+  }
+
+  const candidate = payload.candidates?.[0];
+  const modelText = extractText(candidate);
+
+  if (modelText) {
+    return {
+      modelText,
+      displayText: appendSources(modelText, candidate),
+    };
+  }
+
+  if (payload.promptFeedback?.blockReason) {
+    throw new Error(`Google AI blocked that prompt (${payload.promptFeedback.blockReason}).`);
+  }
+
+  if (candidate?.finishReason) {
+    throw new Error(`Google AI stopped early (${candidate.finishReason}).`);
+  }
+
+  throw new Error("Google AI returned no answer.");
+}
+
 async function renderChatPage(): Promise<void> {
   const chat = document.getElementById("chat");
-  const backendForm = document.getElementById("backend-form");
-  const backendUrlInput = document.getElementById("backend-url");
-  const backendSaveButton = document.getElementById("backend-save");
-  const backendResetButton = document.getElementById("backend-reset");
-  const backendStatus = document.getElementById("backend-status");
+  const keyForm = document.getElementById("backend-form");
+  const keyInput = document.getElementById("backend-url");
+  const keySaveButton = document.getElementById("backend-save");
+  const keyResetButton = document.getElementById("backend-reset");
+  const keyStatus = document.getElementById("backend-status");
   const form = document.getElementById("form");
   const input = document.getElementById("input");
   const btn = document.getElementById("btn");
@@ -171,23 +272,23 @@ async function renderChatPage(): Promise<void> {
     throw new Error("Missing #chat container.");
   }
 
-  if (!(backendForm instanceof HTMLFormElement)) {
+  if (!(keyForm instanceof HTMLFormElement)) {
     throw new Error("Missing #backend-form element.");
   }
 
-  if (!(backendUrlInput instanceof HTMLInputElement)) {
+  if (!(keyInput instanceof HTMLInputElement)) {
     throw new Error("Missing #backend-url field.");
   }
 
-  if (!(backendSaveButton instanceof HTMLButtonElement)) {
+  if (!(keySaveButton instanceof HTMLButtonElement)) {
     throw new Error("Missing #backend-save button.");
   }
 
-  if (!(backendResetButton instanceof HTMLButtonElement)) {
+  if (!(keyResetButton instanceof HTMLButtonElement)) {
     throw new Error("Missing #backend-reset button.");
   }
 
-  if (!(backendStatus instanceof HTMLParagraphElement)) {
+  if (!(keyStatus instanceof HTMLParagraphElement)) {
     throw new Error("Missing #backend-status element.");
   }
 
@@ -205,10 +306,11 @@ async function renderChatPage(): Promise<void> {
 
   chat.hidden = false;
   form.hidden = false;
-  document.title = "AI Researcher";
+  document.title = APP_NAME === "Agent" ? "AI Researcher" : APP_NAME;
 
   const defaultComposerPlaceholder = input.placeholder;
-  let sessionId: string | null = null;
+  const conversationHistory: GeminiContent[] = [];
+  let apiKey = readStoredApiKey();
   let isBusy = false;
 
   const addMsg = (text: string, role: string): HTMLDivElement => {
@@ -220,119 +322,45 @@ async function renderChatPage(): Promise<void> {
     return el;
   };
 
-  const setBackendStatus = (message: string, state: "idle" | "success" | "error" = "idle"): void => {
-    backendStatus.textContent = message;
-    backendStatus.dataset.state = state;
+  const setKeyStatus = (message: string, state: "idle" | "success" | "error" = "idle"): void => {
+    keyStatus.textContent = message;
+    keyStatus.dataset.state = state;
   };
 
   const refreshComposerState = (): void => {
-    const disabled = isBusy || !apiBaseUrl || !sessionId;
+    const disabled = isBusy || !apiKey;
     btn.disabled = disabled;
     input.disabled = disabled;
     input.placeholder = disabled
-      ? "Set a working server URL to start chatting."
+      ? "Save your API key to start chatting."
       : defaultComposerPlaceholder;
   };
 
   const resetChat = (): void => {
     chat.innerHTML = "";
+    conversationHistory.length = 0;
   };
 
-  const syncBackendUi = (): void => {
-    backendUrlInput.value = readStoredApiBaseUrl();
+  const syncKeyUi = (): void => {
+    keyInput.value = "";
 
-    if (apiBaseUrl) {
-      if (isUsingCustomApiBaseUrl()) {
-        setBackendStatus(
-          sessionId ? "Connected to your custom server." : "Using your custom server.",
-          sessionId ? "success" : "idle",
-        );
-        return;
-      }
-
-      setBackendStatus("");
+    if (apiKey) {
+      setKeyStatus("Saved API key ready.", "success");
       return;
     }
 
-    setBackendStatus("Enter the server URL to connect this app.");
+    setKeyStatus("Enter your Google AI Studio API key to start chatting.");
   };
 
   const setBusyState = (busy: boolean): void => {
     isBusy = busy;
-    backendSaveButton.disabled = busy;
-    backendResetButton.disabled = busy;
+    keySaveButton.disabled = busy;
+    keyResetButton.disabled = busy;
     refreshComposerState();
-  };
-
-  const initSession = async (): Promise<void> => {
-    const res = await fetch(`${apiBaseUrl}/apps/${APP}/users/${USER}/sessions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    });
-
-    if (!res.ok) {
-      throw new Error(`Session request failed with ${res.status}.`);
-    }
-
-    const data = (await res.json()) as { id?: string };
-    sessionId = data.id ?? null;
-
-    if (!sessionId) {
-      throw new Error("Missing session id.");
-    }
-  };
-
-  const connectToBackend = async (showSuccessMessage = false): Promise<boolean> => {
-    sessionId = null;
-    refreshComposerState();
-
-    if (!apiBaseUrl) {
-      setBackendStatus("Enter the server URL to connect this app.", "error");
-      addMsg("Enter the server URL in the sidebar to connect this app.", "agent");
-      return false;
-    }
-
-    if (isUsingCustomApiBaseUrl()) {
-      setBackendStatus("Connecting to your custom server…");
-    } else {
-      setBackendStatus("");
-    }
-
-    try {
-      await initSession();
-      if (isUsingCustomApiBaseUrl()) {
-        setBackendStatus("Connected to your custom server.", "success");
-      } else {
-        setBackendStatus("");
-      }
-
-      if (showSuccessMessage) {
-        if (isUsingCustomApiBaseUrl()) {
-          addMsg("Connected to your custom server.", "agent");
-        }
-      }
-
-      refreshComposerState();
-      return true;
-    } catch {
-      if (isUsingCustomApiBaseUrl()) {
-        setBackendStatus("Can't reach your custom server. Check the URL and try again.", "error");
-        addMsg("Can't reach your custom server. Check the server URL and try again.", "agent");
-      } else if (isUsingLiveAgentServer()) {
-        setBackendStatus("The live agent is unavailable right now. Please try again in a moment.", "error");
-        addMsg("The live agent is unavailable right now. Please try again in a moment.", "agent");
-      } else {
-        setBackendStatus("Can't reach the server right now.", "error");
-        addMsg("Can't reach the server right now.", "agent");
-      }
-      refreshComposerState();
-      return false;
-    }
   };
 
   const sendMessage = async (text: string): Promise<void> => {
-    if (!sessionId) {
+    if (!apiKey) {
       return;
     }
 
@@ -341,132 +369,70 @@ async function renderChatPage(): Promise<void> {
     const thinking = addMsg("Thinking...", "agent thinking");
 
     try {
-      const res = await fetch(`${apiBaseUrl}/run_sse`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          app_name: APP,
-          user_id: USER,
-          session_id: sessionId,
-          new_message: { role: "user", parts: [{ text }] },
-          streaming: false,
-        }),
-      });
+      const nextContents: GeminiContent[] = [
+        ...conversationHistory,
+        { role: "user", parts: [{ text }] },
+      ];
 
-      if (!res.ok) {
-        throw new Error(`Agent request failed with ${res.status}.`);
-      }
+      const { modelText, displayText } = await generateReply(apiKey, nextContents);
 
-      const reader = res.body?.getReader();
-      if (!reader) {
-        throw new Error("Missing response body.");
-      }
-
-      const decoder = new TextDecoder();
-      let reply = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          break;
-        }
-
-        const chunk = decoder.decode(value);
-        for (const line of chunk.split("\n")) {
-          if (!line.startsWith("data:")) {
-            continue;
-          }
-
-          try {
-            const event = JSON.parse(line.slice(5).trim()) as {
-              content?: {
-                parts?: Array<{ text?: string }>;
-              };
-            };
-            const part = event.content?.parts?.[0]?.text;
-            if (part) {
-              reply += part;
-            }
-          } catch {
-            // Ignore incomplete SSE chunks until the next frame arrives.
-          }
-        }
-      }
+      conversationHistory.push({ role: "user", parts: [{ text }] });
+      conversationHistory.push({ role: "model", parts: [{ text: modelText }] });
 
       thinking.remove();
-      if (reply) {
-        addMsg(reply, "agent");
-      }
-    } catch {
+      addMsg(displayText, "agent");
+      syncKeyUi();
+    } catch (error: unknown) {
       thinking.remove();
-      if (isUsingCustomApiBaseUrl()) {
-        addMsg("Can't reach your custom server right now.", "agent");
-      } else {
-        addMsg("The live agent is unavailable right now. Please try again in a moment.", "agent");
-      }
+      const message = error instanceof Error ? error.message : "Couldn't get a response right now.";
+      setKeyStatus(message, "error");
+      addMsg(message, "agent");
     } finally {
       setBusyState(false);
       input.focus();
     }
   };
 
-  backendForm.addEventListener("submit", async (event: SubmitEvent) => {
+  keyForm.addEventListener("submit", async (event: SubmitEvent) => {
     event.preventDefault();
 
-    const nextValue = backendUrlInput.value.trim();
-    const problem = getApiBaseUrlProblem(nextValue);
+    const nextValue = keyInput.value.trim();
+    const problem = getApiKeyProblem(nextValue);
 
     if (problem) {
-      setBackendStatus(problem, "error");
-      backendUrlInput.focus();
+      setKeyStatus(problem, "error");
+      keyInput.focus();
       return;
     }
 
-    apiBaseUrl = normalizeApiUrl(nextValue);
-    writeStoredApiBaseUrl(apiBaseUrl);
+    apiKey = nextValue;
+    writeStoredApiKey(apiKey);
     resetChat();
-    setBusyState(true);
 
-    try {
-      await connectToBackend(true);
-    } finally {
-      setBusyState(false);
-      syncBackendUi();
-      if (!input.disabled) {
-        input.focus();
-      }
+    syncKeyUi();
+    refreshComposerState();
+    addMsg("API key saved in this browser. Ask anything to begin.", "agent");
+
+    if (!input.disabled) {
+      input.focus();
     }
   });
 
-  backendResetButton.addEventListener("click", async () => {
-    writeStoredApiBaseUrl("");
-    apiBaseUrl = getDefaultApiBaseUrl();
-    sessionId = null;
+  keyResetButton.addEventListener("click", () => {
+    writeStoredApiKey("");
+    apiKey = "";
     resetChat();
-    syncBackendUi();
 
-    if (!apiBaseUrl) {
-      refreshComposerState();
-      addMsg("Server URL cleared. Enter a server URL to reconnect.", "agent");
-      return;
-    }
-
-    setBusyState(true);
-    try {
-      await connectToBackend(true);
-    } finally {
-      setBusyState(false);
-      syncBackendUi();
-      if (!input.disabled) {
-        input.focus();
-      }
-    }
+    syncKeyUi();
+    refreshComposerState();
+    addMsg("API key cleared. Enter a new key to continue.", "agent");
+    keyInput.focus();
   });
 
   form.addEventListener("submit", async (event: SubmitEvent) => {
     event.preventDefault();
     const text = input.value.trim();
-    if (!text || !sessionId) {
+    if (!text || !apiKey) {
       return;
     }
 
@@ -474,20 +440,11 @@ async function renderChatPage(): Promise<void> {
     await sendMessage(text);
   });
 
-  syncBackendUi();
+  syncKeyUi();
   refreshComposerState();
 
-  if (!apiBaseUrl) {
-    addMsg("Enter the server URL in the sidebar to connect this app.", "agent");
-    return;
-  }
-
-  setBusyState(true);
-  try {
-    await connectToBackend();
-  } finally {
-    setBusyState(false);
-    syncBackendUi();
+  if (!apiKey) {
+    addMsg("Enter your Google AI Studio API key above to start chatting.", "agent");
   }
 }
 
