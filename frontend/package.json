@@ -1,8 +1,18 @@
 {
-  "name": "frontend",
-  "version": "0.0.0",
+  "name": "@waelio/agent",
+  "version": "0.1.0",
   "private": false,
+  "description": "Frontend app for the waelio agent project.",
+  "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/waelio/agent.git"
+  },
+  "homepage": "https://github.com/waelio/agent#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
