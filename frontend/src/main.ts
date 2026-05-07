@@ -82,8 +82,8 @@ function isUsingCustomApiBaseUrl(): boolean {
   return readStoredApiBaseUrl() !== "";
 }
 
-function getServerLabel(): string {
-  return isUsingCustomApiBaseUrl() ? "your custom server" : "the live agent server";
+function isUsingLiveAgentServer(): boolean {
+  return apiBaseUrl !== "" && !isUsingCustomApiBaseUrl();
 }
 
 function getDefaultApiBaseUrl(): string {
@@ -242,10 +242,15 @@ async function renderChatPage(): Promise<void> {
     backendUrlInput.value = readStoredApiBaseUrl();
 
     if (apiBaseUrl) {
-      setBackendStatus(
-        sessionId ? `Connected to ${getServerLabel()}.` : `Using ${getServerLabel()}.`,
-        sessionId ? "success" : "idle",
-      );
+      if (isUsingCustomApiBaseUrl()) {
+        setBackendStatus(
+          sessionId ? "Connected to your custom server." : "Using your custom server.",
+          sessionId ? "success" : "idle",
+        );
+        return;
+      }
+
+      setBackendStatus("");
       return;
     }
 
@@ -288,21 +293,39 @@ async function renderChatPage(): Promise<void> {
       return false;
     }
 
-    setBackendStatus(`Connecting to ${getServerLabel()}…`);
+    if (isUsingCustomApiBaseUrl()) {
+      setBackendStatus("Connecting to your custom server…");
+    } else {
+      setBackendStatus("");
+    }
 
     try {
       await initSession();
-      setBackendStatus(`Connected to ${getServerLabel()}.`, "success");
+      if (isUsingCustomApiBaseUrl()) {
+        setBackendStatus("Connected to your custom server.", "success");
+      } else {
+        setBackendStatus("");
+      }
 
       if (showSuccessMessage) {
-        addMsg(`Connected to ${getServerLabel()}.`, "agent");
+        if (isUsingCustomApiBaseUrl()) {
+          addMsg("Connected to your custom server.", "agent");
+        }
       }
 
       refreshComposerState();
       return true;
     } catch {
-      setBackendStatus("Failed to connect. Check that the server is running and allows this app.", "error");
-      addMsg("Failed to connect. Check the server URL and make sure the server allows this app.", "agent");
+      if (isUsingCustomApiBaseUrl()) {
+        setBackendStatus("Can't reach your custom server. Check the URL and try again.", "error");
+        addMsg("Can't reach your custom server. Check the server URL and try again.", "agent");
+      } else if (isUsingLiveAgentServer()) {
+        setBackendStatus("The live agent is unavailable right now. Please try again in a moment.", "error");
+        addMsg("The live agent is unavailable right now. Please try again in a moment.", "agent");
+      } else {
+        setBackendStatus("Can't reach the server right now.", "error");
+        addMsg("Can't reach the server right now.", "agent");
+      }
       refreshComposerState();
       return false;
     }
@@ -376,7 +399,11 @@ async function renderChatPage(): Promise<void> {
       }
     } catch {
       thinking.remove();
-      addMsg("Failed to reach the agent server.", "agent");
+      if (isUsingCustomApiBaseUrl()) {
+        addMsg("Can't reach your custom server right now.", "agent");
+      } else {
+        addMsg("The live agent is unavailable right now. Please try again in a moment.", "agent");
+      }
     } finally {
       setBusyState(false);
       input.focus();
