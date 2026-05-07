@@ -29,7 +29,7 @@
             Install app
           </button>
           <form id="backend-form" class="backend-form">
-            <label class="backend-label" for="backend-url">Backend URL</label>
+            <label class="backend-label" for="backend-url">Server URL</label>
             <input
               id="backend-url"
               class="backend-input"
@@ -37,7 +37,7 @@
               inputmode="url"
               autocomplete="off"
               spellcheck="false"
-              placeholder="https://your-api.example.com"
+              placeholder="https://your-agent-server.example.com"
             />
             <div class="backend-actions">
               <button id="backend-save" class="backend-save" type="submit">
@@ -55,9 +55,8 @@
             ></p>
           </form>
           <p class="drawer-hint">
-            Deploy this frontend on Cloudflare Pages and point
-            <code>VITE_API_BASE_URL</code>
-            at your ADK API, or enter the backend URL above.
+            This app is already connected to the live agent server. Change the
+            server URL above only if you want to test a different one.
           </p>
         </div>
       </aside>

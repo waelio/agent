@@ -18,22 +18,22 @@ function normalizeApiUrl(url: string): string {
 function getApiBaseUrlProblem(url: string): string | null {
   const trimmed = url.trim();
   if (!trimmed) {
-    return "Enter your deployed ADK backend URL.";
+    return "Enter the agent server URL.";
   }
 
   let parsed: URL;
   try {
     parsed = new URL(trimmed);
   } catch {
-    return "Enter a full backend URL starting with http:// or https://.";
+    return "Enter a full server URL starting with http:// or https://.";
   }
 
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    return "Use an http:// or https:// backend URL.";
+    return "Use an http:// or https:// server URL.";
   }
 
   if (FRONTEND_ONLY_AGENT_HOSTS.has(parsed.hostname)) {
-    return `${parsed.hostname} is the frontend site, not the ADK backend.`;
+    return `${parsed.hostname} is the app site, not the agent server.`;
   }
 
   return null;
@@ -222,7 +222,7 @@ async function renderChatPage(): Promise<void> {
     btn.disabled = disabled;
     input.disabled = disabled;
     input.placeholder = disabled
-      ? "Set a working backend URL to start chatting."
+      ? "Set a working server URL to start chatting."
       : defaultComposerPlaceholder;
   };
 
@@ -238,7 +238,7 @@ async function renderChatPage(): Promise<void> {
       return;
     }
 
-    setBackendStatus("Set your deployed ADK backend URL to connect this app.");
+    setBackendStatus("Enter the server URL to connect this app.");
   };
 
   const setBusyState = (busy: boolean): void => {
@@ -272,8 +272,8 @@ async function renderChatPage(): Promise<void> {
     refreshComposerState();
 
     if (!apiBaseUrl) {
-      setBackendStatus("Set your deployed ADK backend URL to connect this app.", "error");
-      addMsg("Set your deployed ADK backend URL in the sidebar to connect this frontend.", "agent");
+      setBackendStatus("Enter the server URL to connect this app.", "error");
+      addMsg("Enter the server URL in the sidebar to connect this app.", "agent");
       return false;
     }
 
@@ -290,8 +290,8 @@ async function renderChatPage(): Promise<void> {
       refreshComposerState();
       return true;
     } catch {
-      setBackendStatus(`Failed to connect to ${apiBaseUrl}. Check CORS and whether the API is running.`, "error");
-      addMsg(`Failed to connect to ${apiBaseUrl}. Check the backend URL and CORS settings.`, "agent");
+      setBackendStatus(`Failed to connect to ${apiBaseUrl}. Check that the server is running and allows this app.`, "error");
+      addMsg(`Failed to connect to ${apiBaseUrl}. Check the server URL and make sure the server allows this app.`, "agent");
       refreshComposerState();
       return false;
     }
@@ -409,7 +409,7 @@ async function renderChatPage(): Promise<void> {
 
     if (!apiBaseUrl) {
       refreshComposerState();
-      addMsg("Backend URL cleared. Enter your deployed ADK backend URL to reconnect.", "agent");
+      addMsg("Server URL cleared. Enter a server URL to reconnect.", "agent");
       return;
     }
 
@@ -440,7 +440,7 @@ async function renderChatPage(): Promise<void> {
   refreshComposerState();
 
   if (!apiBaseUrl) {
-    addMsg("Set your deployed ADK backend URL in the sidebar to connect this frontend.", "agent");
+    addMsg("Enter the server URL in the sidebar to connect this app.", "agent");
     return;
   }
 
