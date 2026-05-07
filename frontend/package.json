@@ -1,8 +1,16 @@
 {
   "name": "@waelio/agent",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": false,
-  "description": "Frontend app for the waelio agent project.",
+  "description": "React + Vite frontend for the waelio Google ADK agent project.",
+  "keywords": [
+    "adk",
+    "agent",
+    "google-adk",
+    "react",
+    "typescript",
+    "vite"
+  ],
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -10,6 +18,9 @@
     "url": "git+https://github.com/waelio/agent.git"
   },
   "homepage": "https://github.com/waelio/agent#readme",
+  "bugs": {
+    "url": "https://github.com/waelio/agent/issues"
+  },
   "publishConfig": {
     "access": "public"
   },
