@@ -126,7 +126,8 @@ Set these in Cloudflare Pages:
 Runtime behavior:
 
 - on localhost, the frontend falls back to `http://localhost:8000`
-- in production without `VITE_API_BASE_URL`, it falls back to the current origin
+- in production without `VITE_API_BASE_URL`, the frontend waits for a configured backend URL instead of calling the Pages origin
+- users can also save a backend URL from the app sidebar in the browser
 
 ### Important architecture note
 

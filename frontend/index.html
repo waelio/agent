@@ -28,10 +28,36 @@
           <button id="install-btn" class="install-btn" hidden>
             Install app
           </button>
+          <form id="backend-form" class="backend-form">
+            <label class="backend-label" for="backend-url">Backend URL</label>
+            <input
+              id="backend-url"
+              class="backend-input"
+              type="url"
+              inputmode="url"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="https://your-api.example.com"
+            />
+            <div class="backend-actions">
+              <button id="backend-save" class="backend-save" type="submit">
+                Connect
+              </button>
+              <button id="backend-reset" class="backend-reset" type="button">
+                Reset
+              </button>
+            </div>
+            <p
+              id="backend-status"
+              class="backend-status"
+              role="status"
+              aria-live="polite"
+            ></p>
+          </form>
           <p class="drawer-hint">
             Deploy this frontend on Cloudflare Pages and point
             <code>VITE_API_BASE_URL</code>
-            at your ADK API.
+            at your ADK API, or enter the backend URL above.
           </p>
         </div>
       </aside>

@@ -59,7 +59,10 @@ Set these in your Cloudflare Pages project:
 If `VITE_API_BASE_URL` is not set, the frontend falls back to:
 
 - `http://localhost:8000` during local development
-- the current origin in production
+- a saved browser override if one exists
+
+In production without either of those values, the app now waits for a backend
+URL instead of trying to call the Cloudflare Pages frontend origin.
 
 ### Important backend note
 
