@@ -1,11 +1,53 @@
-const API = "http://localhost:8000";
-const APP = "Agent";
-const USER = "user1";
+import "./style.css";
+import { setupPwa } from "./pwa";
+
+const APP = import.meta.env.VITE_AGENT_APP_NAME?.trim() || "Agent";
+const USER_STORAGE_KEY = "waelio-agent-user-id";
 
 function normalizePathname(pathname: string): string {
   const normalized = pathname.replace(/\/+$/, "");
   return normalized === "" ? "/" : normalized;
 }
+
+function normalizeApiUrl(url: string): string {
+  return url.replace(/\/+$/, "");
+}
+
+function resolveApiBaseUrl(): string {
+  const envValue = import.meta.env.VITE_API_BASE_URL?.trim();
+  if (envValue) {
+    return normalizeApiUrl(envValue);
+  }
+
+  const { hostname, origin } = window.location;
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return "http://localhost:8000";
+  }
+
+  return normalizeApiUrl(origin);
+}
+
+function createFallbackUserId(): string {
+  return `guest-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function getUserId(): string {
+  try {
+    const existing = window.localStorage.getItem(USER_STORAGE_KEY);
+    if (existing) {
+      return existing;
+    }
+
+    const next = window.crypto?.randomUUID?.() ?? createFallbackUserId();
+    window.localStorage.setItem(USER_STORAGE_KEY, next);
+    return next;
+  } catch {
+    return createFallbackUserId();
+  }
+}
+
+const API = resolveApiBaseUrl();
+const USER = getUserId();
 
 function syncDrawerLinks(activePath: string): void {
   const links = document.querySelectorAll<HTMLAnchorElement>(".drawer-link[data-path]");
@@ -74,6 +116,11 @@ async function renderChatPage(): Promise<void> {
     return el;
   };
 
+  const setComposerState = (disabled: boolean): void => {
+    btn.disabled = disabled;
+    input.disabled = disabled;
+  };
+
   const initSession = async (): Promise<void> => {
     const res = await fetch(`${API}/apps/${APP}/users/${USER}/sessions`, {
       method: "POST",
@@ -90,7 +137,7 @@ async function renderChatPage(): Promise<void> {
       return;
     }
 
-    btn.disabled = true;
+    setComposerState(true);
     addMsg(text, "user");
     const thinking = addMsg("Thinking...", "agent thinking");
 
@@ -149,9 +196,9 @@ async function renderChatPage(): Promise<void> {
       }
     } catch {
       thinking.remove();
-      addMsg("Failed to reach the agent server.", "agent");
+      addMsg(`Failed to reach the agent server at ${API}.`, "agent");
     } finally {
-      btn.disabled = false;
+      setComposerState(false);
       input.focus();
     }
   };
@@ -170,9 +217,11 @@ async function renderChatPage(): Promise<void> {
   try {
     await initSession();
   } catch {
-    addMsg("Failed to connect to agent server. Is it running?", "agent");
+    addMsg(`Failed to connect to ${API}. Check the backend URL and CORS settings.`, "agent");
   }
 }
+
+setupPwa();
 
 const pathname = normalizePathname(window.location.pathname);
 const activePath = pathname === "/social" ? "/social" : "/";
