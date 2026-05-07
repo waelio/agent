@@ -20,9 +20,28 @@ function isStandaloneMode(): boolean {
 }
 
 export function setupPwa(): void {
-    registerSW({
+    let reloadingForUpdate = false;
+
+    const updateSW = registerSW({
         immediate: true,
+        onNeedRefresh() {
+            void updateSW(true);
+        },
+        onRegisteredSW(_swUrl, registration) {
+            void registration?.update();
+        },
     });
+
+    if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+            if (reloadingForUpdate) {
+                return;
+            }
+
+            reloadingForUpdate = true;
+            window.location.reload();
+        });
+    }
 
     const installButton = document.getElementById("install-btn");
     if (!(installButton instanceof HTMLButtonElement)) {
