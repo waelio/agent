@@ -78,6 +78,14 @@ function writeStoredApiBaseUrl(url: string): void {
   }
 }
 
+function isUsingCustomApiBaseUrl(): boolean {
+  return readStoredApiBaseUrl() !== "";
+}
+
+function getServerLabel(): string {
+  return isUsingCustomApiBaseUrl() ? "your custom server" : "the live agent server";
+}
+
 function getDefaultApiBaseUrl(): string {
   const envValue = getEnvApiBaseUrl();
   if (envValue) {
@@ -231,10 +239,13 @@ async function renderChatPage(): Promise<void> {
   };
 
   const syncBackendUi = (): void => {
-    backendUrlInput.value = apiBaseUrl;
+    backendUrlInput.value = readStoredApiBaseUrl();
 
     if (apiBaseUrl) {
-      setBackendStatus(`Using ${apiBaseUrl}`, sessionId ? "success" : "idle");
+      setBackendStatus(
+        sessionId ? `Connected to ${getServerLabel()}.` : `Using ${getServerLabel()}.`,
+        sessionId ? "success" : "idle",
+      );
       return;
     }
 
@@ -277,21 +288,21 @@ async function renderChatPage(): Promise<void> {
       return false;
     }
 
-    setBackendStatus(`Connecting to ${apiBaseUrl}…`);
+    setBackendStatus(`Connecting to ${getServerLabel()}…`);
 
     try {
       await initSession();
-      setBackendStatus(`Connected to ${apiBaseUrl}`, "success");
+      setBackendStatus(`Connected to ${getServerLabel()}.`, "success");
 
       if (showSuccessMessage) {
-        addMsg(`Connected to ${apiBaseUrl}.`, "agent");
+        addMsg(`Connected to ${getServerLabel()}.`, "agent");
       }
 
       refreshComposerState();
       return true;
     } catch {
-      setBackendStatus(`Failed to connect to ${apiBaseUrl}. Check that the server is running and allows this app.`, "error");
-      addMsg(`Failed to connect to ${apiBaseUrl}. Check the server URL and make sure the server allows this app.`, "agent");
+      setBackendStatus("Failed to connect. Check that the server is running and allows this app.", "error");
+      addMsg("Failed to connect. Check the server URL and make sure the server allows this app.", "agent");
       refreshComposerState();
       return false;
     }
@@ -365,7 +376,7 @@ async function renderChatPage(): Promise<void> {
       }
     } catch {
       thinking.remove();
-      addMsg(`Failed to reach the agent server at ${apiBaseUrl}.`, "agent");
+      addMsg("Failed to reach the agent server.", "agent");
     } finally {
       setBusyState(false);
       input.focus();
