@@ -5,6 +5,7 @@
 The repository contains:
 
 - a Python ADK agent package exposed from `Agent/agent.py`
+- a Cloudflare Worker backend in `backend/` for production-hosted frontend requests
 - a frontend app in `frontend/`
 - Cloudflare Pages-friendly PWA output for the frontend
 
@@ -18,6 +19,20 @@ The agent package lives in `Agent/` and exposes `root_agent` for ADK.
 - root agent name: `researcher`
 - model: `gemini-flash-latest`
 - tool: Google Search grounding via `google_search`
+
+### Cloudflare Worker backend
+
+The production backend adapter lives in `backend/`.
+
+It provides the same minimal API shape the frontend already expects:
+
+- `POST /apps/:app/users/:user/sessions`
+- `POST /run_sse`
+- `GET /health`
+
+Instead of requiring a separately hosted Python ADK server, it calls the Gemini
+API server-side with Google Search grounding enabled and returns an ADK-like SSE
+payload for the frontend.
 
 ### Frontend
 
@@ -35,6 +50,7 @@ It is built with Vite and includes:
 ## Project structure
 
 - `Agent/` — ADK agent package with `root_agent`
+- `backend/` — Cloudflare Worker backend for deployed frontend traffic
 - `frontend/` — static frontend/PWA app
 - `.env` — backend environment values such as `GOOGLE_API_KEY`
 - `package.json` — workspace scripts
@@ -109,6 +125,12 @@ Run that command from the repository root, not from inside `Agent/`.
 
 The frontend is set up to deploy as a static PWA on Cloudflare Pages.
 
+For production, the simplest setup in this repository is:
+
+1. deploy `backend/` to Cloudflare Workers
+2. build the frontend with `VITE_API_BASE_URL` pointed at that Worker
+3. deploy `frontend/dist` to Cloudflare Pages
+
 ### Recommended Pages settings
 
 - project root: repository root
@@ -129,15 +151,46 @@ Runtime behavior:
 - in production without `VITE_API_BASE_URL`, the frontend waits for a configured backend URL instead of calling the Pages origin
 - users can also save a backend URL from the app sidebar in the browser
 
+### Cloudflare Worker backend deployment
+
+The repository now includes a server-side Worker in `backend/` that can back the
+Cloudflare Pages frontend without requiring Cloud Run or a separate VM.
+
+Required secret for the Worker:
+
+- `GOOGLE_API_KEY`
+
+Optional Worker variable:
+
+- `GEMINI_MODEL` (defaults to `gemini-2.5-flash`)
+
+Typical deployment flow:
+
+- `npx wrangler secret put GOOGLE_API_KEY --config backend/wrangler.jsonc`
+- `npx wrangler deploy --config backend/wrangler.jsonc`
+- build the frontend with `VITE_API_BASE_URL` set to the deployed Worker URL
+- `npx wrangler pages deploy frontend/dist --project-name waelio-agent`
+
+The Worker allows CORS from:
+
+- `https://waelio-agent.pages.dev`
+- preview subdomains of `waelio-agent.pages.dev`
+- `https://waelio.com`
+- `https://www.waelio.com`
+- local development origins like `http://localhost:3000`
+
 ### Important architecture note
 
-Cloudflare Pages hosts the **frontend only**.
+Cloudflare Pages still hosts the **frontend only**.
 
-The Python ADK backend must run somewhere else, such as:
+For local development, the Python ADK backend can still run separately, such as:
 
 - Cloud Run
 - a VM
 - another HTTPS service you control
+
+For this repository's production deployment, the included Cloudflare Worker
+backend is the recommended default.
 
 Make sure your backend CORS allows your Pages domain.
 

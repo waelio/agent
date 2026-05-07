@@ -42,6 +42,9 @@ Then open `http://127.0.0.1:3000`.
 
 This repository is ready to host the **frontend only** on Cloudflare Pages as a PWA.
 
+For production in this repo, the intended backend is now the Worker in
+`../backend/`, deployed separately on Cloudflare Workers.
+
 ### Recommended Cloudflare Pages settings
 
 - **Project root:** repository root
@@ -64,11 +67,20 @@ If `VITE_API_BASE_URL` is not set, the frontend falls back to:
 In production without either of those values, the app now waits for a backend
 URL instead of trying to call the Cloudflare Pages frontend origin.
 
+### Recommended production pairing
+
+- deploy `../backend/` to Cloudflare Workers
+- use the resulting Worker URL as `VITE_API_BASE_URL`
+- deploy the built frontend to Cloudflare Pages
+
 ### Important backend note
 
 Cloudflare Pages hosts the static frontend, **not** the Python ADK backend.
-You should run the ADK API server somewhere else (for example a VM, Cloud Run,
-or another HTTPS host) and allow your Pages domain in backend CORS.
+You should either:
+
+- use the included Cloudflare Worker backend in `../backend/`, or
+- run the ADK API server somewhere else (for example a VM, Cloud Run,
+  or another HTTPS host) and allow your Pages domain in backend CORS.
 
 Example production backend command:
 
