@@ -47,6 +47,7 @@ This repository is ready to host the **frontend only** on Cloudflare Pages as a 
 - **Project root:** repository root
 - **Build command:** `pnpm --filter ./frontend build`
 - **Build output directory:** `frontend/dist`
+- **Deploy command:** leave empty
 
 ### Required environment variables
 
@@ -69,6 +70,18 @@ or another HTTPS host) and allow your Pages domain in backend CORS.
 Example production backend command:
 
 - `adk api_server --port 8000 --allow_origins "https://your-pages-domain.example.com" .`
+
+### Troubleshooting workspace deploy errors
+
+If Cloudflare is trying to run `npx wrangler deploy` from the repository root, that is the wrong deploy flow for this Pages setup.
+
+This repository is a pnpm workspace, so a root-level Wrangler deploy without a specific Wrangler configuration will fail with a workspace detection error.
+
+For Cloudflare Pages, keep the deploy command empty and use the build settings above.
+
+If you want a manual CLI upload, use a Pages command instead:
+
+- `npx wrangler pages deploy frontend/dist --project-name <your-pages-project>`
 
 ### PWA behavior
 

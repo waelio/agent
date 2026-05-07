@@ -114,6 +114,7 @@ The frontend is set up to deploy as a static PWA on Cloudflare Pages.
 - project root: repository root
 - build command: `pnpm --filter ./frontend build`
 - output directory: `frontend/dist`
+- deploy command: leave empty
 
 ### Required environment variables
 
@@ -142,6 +143,16 @@ Make sure your backend CORS allows your Pages domain.
 Example production backend command:
 
 - `adk api_server --port 8000 --allow_origins "https://your-pages-domain.example.com" .`
+
+### Troubleshooting Cloudflare deploys
+
+If Cloudflare runs `npx wrangler deploy` from the repository root, deployment will fail because this repo is a pnpm workspace and there is no root Wrangler app configuration.
+
+For a **Pages** project, do not set a deploy command at all. Pages only needs the build command and output directory above.
+
+If you want to do a manual direct upload instead of Git-integrated Pages builds, use a Pages-specific command such as:
+
+- `npx wrangler pages deploy frontend/dist --project-name <your-pages-project>`
 
 ## PWA notes
 
