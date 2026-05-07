@@ -134,6 +134,43 @@ a {
   box-shadow: none;
 }
 
+.account-help {
+  display: grid;
+  gap: 8px;
+}
+
+.account-help-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  background: rgba(15, 23, 42, 0.92);
+  color: #e0f2fe;
+  font-weight: 700;
+  text-align: center;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.account-help-link:hover {
+  transform: translateY(-1px);
+  border-color: rgba(125, 211, 252, 0.5);
+  background: rgba(8, 47, 73, 0.88);
+  color: #ffffff;
+}
+
+.account-help-note {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
 .backend-form {
   display: grid;
   gap: 10px;
