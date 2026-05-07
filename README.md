@@ -150,6 +150,8 @@ If Cloudflare runs `npx wrangler deploy` from the repository root, deployment wi
 
 For a **Pages** project, do not set a deploy command at all. Pages only needs the build command and output directory above.
 
+This repository now also includes a Wrangler redirect file at `.wrangler/deploy/config.json` that points root-level Wrangler deploys at `frontend/wrangler.jsonc`.
+
 If you want to do a manual direct upload instead of Git-integrated Pages builds, use a Pages-specific command such as:
 
 - `npx wrangler pages deploy frontend/dist --project-name <your-pages-project>`

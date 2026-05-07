@@ -77,6 +77,8 @@ If Cloudflare is trying to run `npx wrangler deploy` from the repository root, t
 
 This repository is a pnpm workspace, so a root-level Wrangler deploy without a specific Wrangler configuration will fail with a workspace detection error.
 
+To make that workflow safer, the repo now includes `frontend/wrangler.jsonc` plus a root redirect file at `.wrangler/deploy/config.json`, so root-level `wrangler deploy` resolves to the frontend app instead of the workspace root.
+
 For Cloudflare Pages, keep the deploy command empty and use the build settings above.
 
 If you want a manual CLI upload, use a Pages command instead:
