@@ -349,7 +349,7 @@ async function renderChatPage(): Promise<void> {
       return;
     }
 
-    setKeyStatus("Enter your Google AI Studio API key to start chatting.");
+    setKeyStatus("No server URL needed. Enter your Google AI Studio API key to start chatting.");
   };
 
   const setBusyState = (busy: boolean): void => {
@@ -444,7 +444,7 @@ async function renderChatPage(): Promise<void> {
   refreshComposerState();
 
   if (!apiKey) {
-    addMsg("Enter your Google AI Studio API key above to start chatting.", "agent");
+    addMsg("No server URL needed. Enter your Google AI Studio API key above, or create one with the link in the sidebar.", "agent");
   }
 }
 
