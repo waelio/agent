@@ -2,87 +2,157 @@ import "./style.css";
 import { setupPwa } from "./pwa";
 
 const APP_NAME = import.meta.env.VITE_AGENT_APP_NAME?.trim() || "Agent";
-const API_KEY_STORAGE_KEY = "waelio-agent-gemini-api-key";
-const MODEL_NAME = "gemini-2.5-flash";
-const SYSTEM_INSTRUCTION = "You help users research topics thoroughly.";
+const BACKEND_URL_STORAGE_KEY = "waelio-agent-backend-url";
+const USER_ID_STORAGE_KEY = "waelio-agent-user-id";
+
+type BackendSource = "saved" | "env" | "local" | "unset";
 
 function normalizePathname(pathname: string): string {
   const normalized = pathname.replace(/\/+$/, "");
   return normalized === "" ? "/" : normalized;
 }
 
-function readStoredApiKey(): string {
+function normalizeBackendUrl(value: string): string {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return "";
+  }
+
   try {
-    return window.localStorage.getItem(API_KEY_STORAGE_KEY)?.trim() ?? "";
+    const url = new URL(trimmed);
+    return url.toString().replace(/\/+$/, "");
   } catch {
     return "";
   }
 }
 
-function writeStoredApiKey(apiKey: string): void {
+function isLocalhost(hostname: string): boolean {
+  return hostname === "localhost" || hostname === "127.0.0.1";
+}
+
+function readStoredBackendUrl(): string {
   try {
-    if (apiKey) {
-      window.localStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
+    return normalizeBackendUrl(window.localStorage.getItem(BACKEND_URL_STORAGE_KEY) ?? "");
+  } catch {
+    return "";
+  }
+}
+
+function writeStoredBackendUrl(backendUrl: string): void {
+  try {
+    if (backendUrl) {
+      window.localStorage.setItem(BACKEND_URL_STORAGE_KEY, backendUrl);
     } else {
-      window.localStorage.removeItem(API_KEY_STORAGE_KEY);
+      window.localStorage.removeItem(BACKEND_URL_STORAGE_KEY);
     }
   } catch {
     // Ignore storage failures.
   }
 }
 
-function getApiKeyProblem(apiKey: string): string | null {
-  const trimmed = apiKey.trim();
+function getConfiguredBackend(ignoreSaved = false): { url: string; source: BackendSource } {
+  const savedUrl = ignoreSaved ? "" : readStoredBackendUrl();
+  if (savedUrl) {
+    return { url: savedUrl, source: "saved" };
+  }
+
+  const envUrl = normalizeBackendUrl(import.meta.env.VITE_API_BASE_URL ?? "");
+  if (envUrl) {
+    return { url: envUrl, source: "env" };
+  }
+
+  if (isLocalhost(window.location.hostname)) {
+    return { url: "http://localhost:8000", source: "local" };
+  }
+
+  return { url: "", source: "unset" };
+}
+
+function getOrCreateUserId(): string {
+  try {
+    const existing = window.localStorage.getItem(USER_ID_STORAGE_KEY)?.trim();
+    if (existing) {
+      return existing;
+    }
+
+    const nextUserId = window.crypto.randomUUID();
+    window.localStorage.setItem(USER_ID_STORAGE_KEY, nextUserId);
+    return nextUserId;
+  } catch {
+    return window.crypto.randomUUID();
+  }
+}
+
+function getBackendProblem(rawValue: string): string | null {
+  const trimmed = rawValue.trim();
   if (!trimmed) {
-    return "Enter your Google AI Studio API key.";
+    return "Enter the backend URL.";
   }
 
   if (/\s/.test(trimmed)) {
-    return "Paste the API key without spaces or line breaks.";
+    return "Paste the backend URL without spaces or line breaks.";
+  }
+
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return "Use an http:// or https:// backend URL.";
+    }
+  } catch {
+    return "Enter a valid absolute backend URL.";
   }
 
   return null;
 }
 
-interface GeminiPart {
+interface AdkPart {
   text?: string;
 }
 
-interface GeminiContent {
-  role: "user" | "model";
-  parts: Array<{ text: string }>;
+interface SessionResponse {
+  id?: string;
 }
 
-interface GeminiGroundingChunk {
-  web?: {
-    uri?: string;
-    title?: string;
-  };
+interface BackendErrorResponse {
+  error?: string;
+  detail?: string;
 }
 
-interface GeminiCandidate {
+interface AdkEvent {
   content?: {
-    parts?: GeminiPart[];
+    parts?: AdkPart[];
   };
+  error?: string;
   finishReason?: string;
-  groundingMetadata?: {
-    groundingChunks?: GeminiGroundingChunk[];
-  };
 }
 
-interface GeminiApiErrorResponse {
-  error?: {
-    code?: number;
-    status?: string;
-    message?: string;
+interface RunSseRequest {
+  app_name: string;
+  user_id: string;
+  session_id: string;
+  new_message: {
+    role: "user";
+    parts: Array<{ text: string }>;
   };
+  streaming: boolean;
 }
 
-interface GeminiResponse extends GeminiApiErrorResponse {
-  candidates?: GeminiCandidate[];
-  promptFeedback?: {
-    blockReason?: string;
-  };
+function joinUrl(baseUrl: string, path: string): string {
+  return new URL(path.replace(/^\/+/, ""), `${baseUrl.replace(/\/+$/, "")}/`).toString();
+}
+
+function parseBackendError(bodyText: string): string {
+  if (!bodyText.trim()) {
+    return "";
+  }
+
+  try {
+    const payload = JSON.parse(bodyText) as BackendErrorResponse;
+    return payload.error?.trim() || payload.detail?.trim() || "";
+  } catch {
+    return bodyText.trim();
+  }
 }
 
 function syncDrawerLinks(activePath: string): void {
@@ -115,8 +185,8 @@ function renderEmptySocialPage(): void {
   document.title = "Social";
 }
 
-function extractText(candidate: GeminiCandidate | undefined): string {
-  const parts = candidate?.content?.parts ?? [];
+function extractEventText(event: AdkEvent | undefined): string {
+  const parts = event?.content?.parts ?? [];
   return parts
     .map((part) => part.text?.trim() ?? "")
     .filter((part) => part.length > 0)
@@ -124,146 +194,150 @@ function extractText(candidate: GeminiCandidate | undefined): string {
     .trim();
 }
 
-function appendSources(text: string, candidate: GeminiCandidate | undefined): string {
-  const chunks = candidate?.groundingMetadata?.groundingChunks ?? [];
-  const seen = new Set<string>();
-  const sources: Array<{ title: string; uri: string }> = [];
+function getFriendlyBackendError(status: number, bodyText: string): string {
+  const detailedMessage = parseBackendError(bodyText);
 
-  for (const chunk of chunks) {
-    const uri = chunk.web?.uri?.trim();
-    if (!uri || seen.has(uri)) {
-      continue;
-    }
-
-    seen.add(uri);
-    sources.push({ title: chunk.web?.title?.trim() || uri, uri });
-
-    if (sources.length >= 6) {
-      break;
-    }
+  if (status === 400) {
+    return detailedMessage || "The backend rejected that request.";
   }
 
-  if (sources.length === 0) {
-    return text;
+  if (status === 401 || status === 403) {
+    return detailedMessage || "The backend refused that request. Check access and CORS settings.";
   }
 
-  const suffix = sources
-    .map((source, index) => `${index + 1}. ${source.title} — ${source.uri}`)
-    .join("\n");
-
-  return `${text}\n\nSources:\n${suffix}`;
-}
-
-function getFriendlyGeminiError(status: number, bodyText: string): string {
-  let payload: GeminiApiErrorResponse | undefined;
-
-  try {
-    payload = JSON.parse(bodyText) as GeminiApiErrorResponse;
-  } catch {
-    payload = undefined;
-  }
-
-  const detailedMessage = payload?.error?.message?.trim() ?? "";
-  const normalizedMessage = `${payload?.error?.status ?? ""} ${detailedMessage}`.toLowerCase();
-
-  if (
-    status === 401 ||
-    status === 403 ||
-    normalizedMessage.includes("api key") ||
-    normalizedMessage.includes("permission") ||
-    normalizedMessage.includes("unauth")
-  ) {
-    return "That API key didn't work. Check it and try again.";
-  }
-
-  if (
-    normalizedMessage.includes("quota") ||
-    normalizedMessage.includes("billing") ||
-    normalizedMessage.includes("rate") ||
-    normalizedMessage.includes("resource exhausted")
-  ) {
-    return "That API key hit a quota or billing limit. Try again later or use a different key.";
+  if (status === 404) {
+    return detailedMessage || "Couldn't find the backend endpoint. Check the backend URL and try again.";
   }
 
   if (status >= 500) {
-    return "Google AI is unavailable right now. Please try again in a moment.";
+    return detailedMessage || "The backend hit an internal error. Please try again in a moment.";
   }
 
-  if (detailedMessage) {
-    return detailedMessage;
-  }
-
-  return "Couldn't get a response from Google AI right now.";
+  return detailedMessage || "Couldn't get a response from the backend right now.";
 }
 
-async function generateReply(apiKey: string, contents: GeminiContent[]): Promise<{ modelText: string; displayText: string }> {
-  const endpoint = new URL(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent`);
-  endpoint.searchParams.set("key", apiKey);
+function parseSseEvents(bodyText: string): AdkEvent[] {
+  const events: AdkEvent[] = [];
 
+  for (const block of bodyText.split(/\n\n+/)) {
+    const dataLines = block
+      .split("\n")
+      .filter((line) => line.startsWith("data:"))
+      .map((line) => line.slice("data:".length).trimStart());
+
+    if (dataLines.length === 0) {
+      continue;
+    }
+
+    const payloadText = dataLines.join("\n").trim();
+    if (!payloadText || payloadText === "[DONE]") {
+      continue;
+    }
+
+    try {
+      events.push(JSON.parse(payloadText) as AdkEvent);
+    } catch {
+      // Ignore malformed event chunks.
+    }
+  }
+
+  return events;
+}
+
+async function createSession(backendUrl: string, userId: string): Promise<string> {
   let response: Response;
 
   try {
-    response = await fetch(endpoint.toString(), {
+    response = await fetch(joinUrl(backendUrl, `apps/${encodeURIComponent(APP_NAME)}/users/${encodeURIComponent(userId)}/sessions`), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+    });
+  } catch {
+    throw new Error("Couldn't reach the backend. Check the URL and try again.");
+  }
+
+  const bodyText = await response.text();
+  if (!response.ok) {
+    throw new Error(getFriendlyBackendError(response.status, bodyText));
+  }
+
+  let payload: SessionResponse;
+
+  try {
+    payload = JSON.parse(bodyText) as SessionResponse;
+  } catch {
+    throw new Error("The backend returned an unreadable session response.");
+  }
+
+  const sessionId = payload.id?.trim();
+  if (!sessionId) {
+    throw new Error("The backend did not return a session ID.");
+  }
+
+  return sessionId;
+}
+
+async function generateReply(backendUrl: string, userId: string, sessionId: string, text: string): Promise<string> {
+  let response: Response;
+
+  try {
+    response = await fetch(joinUrl(backendUrl, "run_sse"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: SYSTEM_INSTRUCTION }],
+        app_name: APP_NAME,
+        user_id: userId,
+        session_id: sessionId,
+        new_message: {
+          role: "user",
+          parts: [{ text }],
         },
-        contents,
-        tools: [{ google_search: {} }],
-        generationConfig: {
-          responseMimeType: "text/plain",
-        },
-      }),
+        streaming: false,
+      } satisfies RunSseRequest),
     });
   } catch {
-    throw new Error("Couldn't reach Google AI right now. Check your internet connection and try again.");
+    throw new Error("Couldn't reach the backend. Check the URL and try again.");
   }
 
   const bodyText = await response.text();
   if (!response.ok) {
-    throw new Error(getFriendlyGeminiError(response.status, bodyText));
+    throw new Error(getFriendlyBackendError(response.status, bodyText));
   }
 
-  let payload: GeminiResponse;
+  const events = parseSseEvents(bodyText);
+  const replyText = events
+    .map((event) => extractEventText(event))
+    .filter((message) => message.length > 0)
+    .join("\n\n")
+    .trim();
 
-  try {
-    payload = JSON.parse(bodyText) as GeminiResponse;
-  } catch {
-    throw new Error("Google AI returned an unreadable response.");
+  if (replyText) {
+    return replyText;
   }
 
-  const candidate = payload.candidates?.[0];
-  const modelText = extractText(candidate);
+  const eventError = events
+    .map((event) => event.error?.trim() ?? "")
+    .find((message) => message.length > 0);
 
-  if (modelText) {
-    return {
-      modelText,
-      displayText: appendSources(modelText, candidate),
-    };
+  if (eventError) {
+    throw new Error(eventError);
   }
 
-  if (payload.promptFeedback?.blockReason) {
-    throw new Error(`Google AI blocked that prompt (${payload.promptFeedback.blockReason}).`);
-  }
-
-  if (candidate?.finishReason) {
-    throw new Error(`Google AI stopped early (${candidate.finishReason}).`);
-  }
-
-  throw new Error("Google AI returned no answer.");
+  throw new Error("The backend returned no answer.");
 }
 
 async function renderChatPage(): Promise<void> {
   const chat = document.getElementById("chat");
-  const keyForm = document.getElementById("backend-form");
-  const keyInput = document.getElementById("backend-url");
-  const keySaveButton = document.getElementById("backend-save");
-  const keyResetButton = document.getElementById("backend-reset");
-  const keyStatus = document.getElementById("backend-status");
+  const backendForm = document.getElementById("backend-form");
+  const backendInput = document.getElementById("backend-url");
+  const backendSaveButton = document.getElementById("backend-save");
+  const backendResetButton = document.getElementById("backend-reset");
+  const backendStatus = document.getElementById("backend-status");
   const form = document.getElementById("form");
   const input = document.getElementById("input");
   const btn = document.getElementById("btn");
@@ -272,23 +346,23 @@ async function renderChatPage(): Promise<void> {
     throw new Error("Missing #chat container.");
   }
 
-  if (!(keyForm instanceof HTMLFormElement)) {
+  if (!(backendForm instanceof HTMLFormElement)) {
     throw new Error("Missing #backend-form element.");
   }
 
-  if (!(keyInput instanceof HTMLInputElement)) {
+  if (!(backendInput instanceof HTMLInputElement)) {
     throw new Error("Missing #backend-url field.");
   }
 
-  if (!(keySaveButton instanceof HTMLButtonElement)) {
+  if (!(backendSaveButton instanceof HTMLButtonElement)) {
     throw new Error("Missing #backend-save button.");
   }
 
-  if (!(keyResetButton instanceof HTMLButtonElement)) {
+  if (!(backendResetButton instanceof HTMLButtonElement)) {
     throw new Error("Missing #backend-reset button.");
   }
 
-  if (!(keyStatus instanceof HTMLParagraphElement)) {
+  if (!(backendStatus instanceof HTMLParagraphElement)) {
     throw new Error("Missing #backend-status element.");
   }
 
@@ -309,8 +383,11 @@ async function renderChatPage(): Promise<void> {
   document.title = APP_NAME === "Agent" ? "AI Researcher" : APP_NAME;
 
   const defaultComposerPlaceholder = input.placeholder;
-  const conversationHistory: GeminiContent[] = [];
-  let apiKey = readStoredApiKey();
+  const userId = getOrCreateUserId();
+  const initialBackend = getConfiguredBackend();
+  let backendUrl = initialBackend.url;
+  let backendSource = initialBackend.source;
+  let sessionId = "";
   let isBusy = false;
 
   const addMsg = (text: string, role: string): HTMLDivElement => {
@@ -322,45 +399,64 @@ async function renderChatPage(): Promise<void> {
     return el;
   };
 
-  const setKeyStatus = (message: string, state: "idle" | "success" | "error" = "idle"): void => {
-    keyStatus.textContent = message;
-    keyStatus.dataset.state = state;
+  const setBackendStatus = (message: string, state: "idle" | "success" | "error" = "idle"): void => {
+    backendStatus.textContent = message;
+    backendStatus.dataset.state = state;
   };
 
   const refreshComposerState = (): void => {
-    const disabled = isBusy || !apiKey;
+    const disabled = isBusy || !backendUrl;
     btn.disabled = disabled;
     input.disabled = disabled;
     input.placeholder = disabled
-      ? "Save your API key to start chatting."
+      ? "Connect a backend to start chatting."
       : defaultComposerPlaceholder;
   };
 
   const resetChat = (): void => {
     chat.innerHTML = "";
-    conversationHistory.length = 0;
+    sessionId = "";
   };
 
-  const syncKeyUi = (): void => {
-    keyInput.value = "";
+  const syncBackendUi = (): void => {
+    backendInput.value = backendUrl;
 
-    if (apiKey) {
-      setKeyStatus("Saved API key ready.", "success");
+    if (backendSource === "saved" && backendUrl) {
+      setBackendStatus("Saved backend URL ready.", "success");
       return;
     }
 
-    setKeyStatus("No server URL needed. Enter your Google AI Studio API key to start chatting.");
+    if (backendSource === "env" && backendUrl) {
+      setBackendStatus("Using the configured backend URL.");
+      return;
+    }
+
+    if (backendSource === "local" && backendUrl) {
+      setBackendStatus("Using the local backend at http://localhost:8000.");
+      return;
+    }
+
+    setBackendStatus("Enter a backend URL to start chatting.");
   };
 
   const setBusyState = (busy: boolean): void => {
     isBusy = busy;
-    keySaveButton.disabled = busy;
-    keyResetButton.disabled = busy;
+    backendSaveButton.disabled = busy;
+    backendResetButton.disabled = busy;
     refreshComposerState();
   };
 
+  const ensureSession = async (): Promise<string> => {
+    if (sessionId) {
+      return sessionId;
+    }
+
+    sessionId = await createSession(backendUrl, userId);
+    return sessionId;
+  };
+
   const sendMessage = async (text: string): Promise<void> => {
-    if (!apiKey) {
+    if (!backendUrl) {
       return;
     }
 
@@ -369,23 +465,16 @@ async function renderChatPage(): Promise<void> {
     const thinking = addMsg("Thinking...", "agent thinking");
 
     try {
-      const nextContents: GeminiContent[] = [
-        ...conversationHistory,
-        { role: "user", parts: [{ text }] },
-      ];
-
-      const { modelText, displayText } = await generateReply(apiKey, nextContents);
-
-      conversationHistory.push({ role: "user", parts: [{ text }] });
-      conversationHistory.push({ role: "model", parts: [{ text: modelText }] });
+      const currentSessionId = await ensureSession();
+      const reply = await generateReply(backendUrl, userId, currentSessionId, text);
 
       thinking.remove();
-      addMsg(displayText, "agent");
-      syncKeyUi();
+      addMsg(reply, "agent");
+      syncBackendUi();
     } catch (error: unknown) {
       thinking.remove();
       const message = error instanceof Error ? error.message : "Couldn't get a response right now.";
-      setKeyStatus(message, "error");
+      setBackendStatus(message, "error");
       addMsg(message, "agent");
     } finally {
       setBusyState(false);
@@ -393,46 +482,54 @@ async function renderChatPage(): Promise<void> {
     }
   };
 
-  keyForm.addEventListener("submit", async (event: SubmitEvent) => {
+  backendForm.addEventListener("submit", async (event: SubmitEvent) => {
     event.preventDefault();
 
-    const nextValue = keyInput.value.trim();
-    const problem = getApiKeyProblem(nextValue);
+    const nextValue = backendInput.value.trim();
+    const problem = getBackendProblem(nextValue);
 
     if (problem) {
-      setKeyStatus(problem, "error");
-      keyInput.focus();
+      setBackendStatus(problem, "error");
+      backendInput.focus();
       return;
     }
 
-    apiKey = nextValue;
-    writeStoredApiKey(apiKey);
+    backendUrl = normalizeBackendUrl(nextValue);
+    backendSource = "saved";
+    writeStoredBackendUrl(backendUrl);
     resetChat();
 
-    syncKeyUi();
+    syncBackendUi();
     refreshComposerState();
-    addMsg("API key saved in this browser. Ask anything to begin.", "agent");
+    addMsg("Backend saved in this browser. Ask anything to begin.", "agent");
 
     if (!input.disabled) {
       input.focus();
     }
   });
 
-  keyResetButton.addEventListener("click", () => {
-    writeStoredApiKey("");
-    apiKey = "";
+  backendResetButton.addEventListener("click", () => {
+    writeStoredBackendUrl("");
+    const nextBackend = getConfiguredBackend(true);
+    backendUrl = nextBackend.url;
+    backendSource = nextBackend.source;
     resetChat();
 
-    syncKeyUi();
+    syncBackendUi();
     refreshComposerState();
-    addMsg("API key cleared. Enter a new key to continue.", "agent");
-    keyInput.focus();
+    addMsg(
+      backendUrl
+        ? "Saved backend override cleared. Using the default backend again."
+        : "Backend cleared. Enter a backend URL to continue.",
+      "agent",
+    );
+    backendInput.focus();
   });
 
   form.addEventListener("submit", async (event: SubmitEvent) => {
     event.preventDefault();
     const text = input.value.trim();
-    if (!text || !apiKey) {
+    if (!text || !backendUrl) {
       return;
     }
 
@@ -440,12 +537,28 @@ async function renderChatPage(): Promise<void> {
     await sendMessage(text);
   });
 
-  syncKeyUi();
+  syncBackendUi();
   refreshComposerState();
 
-  if (!apiKey) {
-    addMsg("No server URL needed. Enter your Google AI Studio API key above, or create one with the link in the sidebar.", "agent");
+  if (!backendUrl) {
+    addMsg(
+      "Enter a backend URL above to start chatting. You can point this app at a local ADK API server or the included Cloudflare Worker backend.",
+      "agent",
+    );
+    return;
   }
+
+  if (backendSource === "saved") {
+    addMsg(`Connected to ${backendUrl}. Ask anything to begin.`, "agent");
+    return;
+  }
+
+  if (backendSource === "env") {
+    addMsg(`Using the configured backend at ${backendUrl}. Ask anything to begin.`, "agent");
+    return;
+  }
+
+  addMsg(`Using the local backend at ${backendUrl}. Ask anything to begin.`, "agent");
 }
 
 setupPwa();

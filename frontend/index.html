@@ -18,7 +18,7 @@
       <aside class="drawer" aria-label="App drawer">
         <div class="drawer-title">Agent</div>
         <p class="drawer-subtitle">
-          Cloudflare-ready PWA frontend for your ADK chat experience.
+          Cloudflare-ready PWA frontend for your ADK or Worker chat backend.
         </p>
         <nav class="drawer-nav" aria-label="Primary navigation">
           <a class="drawer-link" data-path="/" href="/">Chat</a>
@@ -29,23 +29,21 @@
             Install app
           </button>
           <form id="backend-form" class="backend-form">
-            <label class="backend-label" for="backend-url">
-              Google AI Studio API key
-            </label>
+            <label class="backend-label" for="backend-url"> Backend URL </label>
             <input
               id="backend-url"
               class="backend-input"
-              type="password"
+              type="url"
               autocomplete="off"
               spellcheck="false"
-              placeholder="Paste your API key"
+              placeholder="https://your-api.example.com"
             />
             <div class="backend-actions">
               <button id="backend-save" class="backend-save" type="submit">
-                Save key
+                Save URL
               </button>
               <button id="backend-reset" class="backend-reset" type="button">
-                Clear key
+                Reset
               </button>
             </div>
             <p
@@ -58,20 +56,20 @@
           <div class="key-help">
             <a
               class="key-help-link"
-              href="https://aistudio.google.com/app/apikey"
+              href="https://github.com/waelio/agent#frontend-deployment-on-cloudflare-pages"
               target="_blank"
               rel="noreferrer"
             >
-              Create a Google AI Studio key
+              Deploy the backend
             </a>
             <p class="key-help-note">
-              No server URL needed. Sign in with Google, create a key, then
-              paste it here to use the AI.
+              Local development uses <code>http://localhost:8000</code>
+              automatically. In production, save any ADK API or Worker URL here.
             </p>
           </div>
           <p class="drawer-hint">
-            This connection is built in. Just paste your Google AI Studio API
-            key above to start chatting.
+            Connect this frontend to an ADK API server or the included
+            Cloudflare Worker backend.
           </p>
         </div>
       </aside>

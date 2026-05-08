@@ -1,15 +1,29 @@
 # @waelio/agent
 
-`@waelio/agent` is the installable Vite frontend package for the waelio Google ADK project.
+`@waelio/agent` is the Cloudflare-ready PWA frontend package for the waelio Google ADK project.
 
-It provides the browser UI used to talk to the ADK-backed research agent.
+It provides the browser UI used to talk to either a local ADK API server or the included Cloudflare Worker backend.
+
+- Live app: `https://waelio-agent.pages.dev/`
+- Repository: `https://github.com/waelio/agent`
 
 ## Highlights
 
 - Installable PWA powered by Vite
-- Simple chat UI for an ADK agent backend
+- Simple chat UI for an ADK or Worker backend
+- Backend URL override saved in the browser
 - Cloudflare Pages friendly static frontend
 - Designed to run locally with the companion Python ADK service
+
+## How the frontend connects
+
+The app resolves its backend in this order:
+
+1. a saved browser override from the sidebar
+2. `VITE_API_BASE_URL` from the environment
+3. `http://localhost:8000` when running on localhost
+
+That makes local development friction-free while still letting deployed builds point at a production Worker or remote ADK server.
 
 ## Local development
 
@@ -38,6 +52,15 @@ Start the ADK API server from the repository root:
 
 Then open `http://127.0.0.1:3000`.
 
+The frontend will automatically use `http://localhost:8000` on localhost, so no manual sidebar setup is needed for the default local flow.
+
+## Environment variables
+
+- `VITE_API_BASE_URL` — optional default backend URL for deployed builds
+- `VITE_AGENT_APP_NAME` — app name used for ADK sessions, defaults to `Agent`
+
+The package ships `frontend/.env.example` values in the published tarball as `.env.example`.
+
 ## Deploy on Cloudflare Pages
 
 This repository is ready to host the **frontend only** on Cloudflare Pages as a PWA.
@@ -59,13 +82,7 @@ Set these in your Cloudflare Pages project:
 - `VITE_API_BASE_URL=https://your-api.example.com`
 - `VITE_AGENT_APP_NAME=Agent`
 
-If `VITE_API_BASE_URL` is not set, the frontend falls back to:
-
-- `http://localhost:8000` during local development
-- a saved browser override if one exists
-
-In production without either of those values, the app now waits for a backend
-URL instead of trying to call the Cloudflare Pages frontend origin.
+If `VITE_API_BASE_URL` is not set, the app still supports a saved browser override, and it only falls back to `http://localhost:8000` on local development hosts.
 
 ### Recommended production pairing
 
@@ -105,6 +122,19 @@ If you want a manual CLI upload, use a Pages command instead:
 - The app generates a web manifest and service worker at build time.
 - Cloudflare SPA routing is enabled via `public/_redirects`.
 - An install button appears automatically in supported browsers.
+
+## What gets published
+
+The npm package intentionally ships the frontend source, PWA assets, deploy config, and docs needed to inspect or build the app:
+
+- `src/`
+- `public/`
+- `index.html`
+- `vite.config.ts`
+- `wrangler.jsonc`
+- `.env.example`
+
+It does **not** publish `dist/` or workspace-only lockfiles.
 
 ## Repository
 
