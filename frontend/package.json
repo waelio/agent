@@ -27,6 +27,7 @@
   },
   "files": [
     ".env.example",
+    "CHANGELOG.md",
     "LICENSE",
     "README.md",
     "index.html",

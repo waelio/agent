@@ -1,11 +1,35 @@
 # @waelio/agent
 
+<p align="center">
+    <img
+        src="https://raw.githubusercontent.com/waelio/agent/default/frontend/src/assets/hero.png"
+        alt="@waelio/agent hero artwork"
+        width="320"
+    />
+</p>
+
+<p align="center">
+    <a href="https://www.npmjs.com/package/@waelio/agent">
+        <img alt="npm version" src="https://img.shields.io/npm/v/%40waelio%2Fagent?label=npm" />
+    </a>
+    <a href="https://waelio-agent.pages.dev/">
+        <img alt="live demo" src="https://img.shields.io/badge/demo-live-2563eb" />
+    </a>
+    <a href="https://waelio-agent.pages.dev/">
+        <img alt="PWA ready" src="https://img.shields.io/badge/pwa-ready-7c3aed" />
+    </a>
+    <a href="https://github.com/waelio/agent/blob/default/frontend/CHANGELOG.md">
+        <img alt="changelog" src="https://img.shields.io/badge/changelog-0.1.2-111827" />
+    </a>
+</p>
+
 `@waelio/agent` is the Cloudflare-ready PWA frontend package for the waelio Google ADK project.
 
 It provides the browser UI used to talk to either a local ADK API server or the included Cloudflare Worker backend.
 
 - Live app: `https://waelio-agent.pages.dev/`
 - Repository: `https://github.com/waelio/agent`
+- Changelog: `https://github.com/waelio/agent/blob/default/frontend/CHANGELOG.md`
 
 ## Highlights
 
@@ -14,6 +38,27 @@ It provides the browser UI used to talk to either a local ADK API server or the 
 - Backend URL override saved in the browser
 - Cloudflare Pages friendly static frontend
 - Designed to run locally with the companion Python ADK service
+
+## Try it quickly
+
+### Live demo
+
+- Open `https://waelio-agent.pages.dev/`
+- Save your deployed Worker or ADK backend URL in the sidebar
+- Start chatting immediately
+
+### Local development
+
+From the repository root:
+
+```text
+pnpm install
+pnpm dev
+source .venv/bin/activate
+adk api_server --port 8000 --allow_origins "regex:http://(127\\.0\\.0\\.1|localhost):3000" .
+```
+
+Then open `http://127.0.0.1:3000`.
 
 ## How the frontend connects
 
@@ -139,6 +184,8 @@ It does **not** publish `dist/` or workspace-only lockfiles.
 ## Repository
 
 - GitHub: `https://github.com/waelio/agent`
+- Releases: `https://github.com/waelio/agent/releases`
+- Changelog: `https://github.com/waelio/agent/blob/default/frontend/CHANGELOG.md`
 
 ## License
 
