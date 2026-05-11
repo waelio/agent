@@ -1,8 +1,11 @@
 {
     "name": "agent-workspace",
     "private": true,
-    "description": "Workspace for Waelio Agent, including frontend and backend services.",
-    "author": "Waelio <waelio@waelio.com> (https://waelio.com)",
+    "description": "A comprehensive monorepo workspace for the Waelio Agent ecosystem, housing the Cloudflare-ready PWA frontend and backend services for an AI-powered researcher agent.",
+    "author": "Wael Wahbeh <wahbehw@gmail.com> (https://waelio.com)",
+    "contributors": [
+        "Wael Wahbeh <wahbehw@me.com> (https://waelio.com)"
+    ],
     "repository": {
         "type": "git",
         "url": "https://github.com/waelio/agent.git"

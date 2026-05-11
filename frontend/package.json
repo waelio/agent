@@ -2,8 +2,11 @@
   "name": "@waelio/agent",
   "version": "0.1.4",
   "private": false,
-  "description": "Cloudflare-ready PWA frontend for ADK and Worker backends.",
-  "author": "Waelio <waelio@waelio.com> (https://waelio.com)",
+  "description": "A high-performance, Cloudflare-ready Progressive Web App (PWA) frontend designed to interface seamlessly with ADK and Worker-based backends for an AI-powered researcher agent.",
+  "author": "Wael Wahbeh <wahbehw@gmail.com> (https://waelio.com)",
+  "contributors": [
+    "Wael Wahbeh <wahbehw@me.com> (https://waelio.com)"
+  ],
   "keywords": [
     "adk",
     "agent",
