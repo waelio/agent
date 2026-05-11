@@ -1,6 +1,12 @@
 {
-    "name": "agent",
+    "name": "agent-workspace",
     "private": true,
+    "description": "Workspace for Waelio Agent, including frontend and backend services.",
+    "author": "Waelio <waelio@waelio.com> (https://waelio.com)",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/waelio/agent.git"
+    },
     "scripts": {
         "dev": "pnpm --filter ./frontend dev",
         "build": "pnpm --filter ./frontend build"

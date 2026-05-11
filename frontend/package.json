@@ -1,8 +1,9 @@
 {
   "name": "@waelio/agent",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": false,
   "description": "Cloudflare-ready PWA frontend for ADK and Worker backends.",
+  "author": "Waelio <waelio@waelio.com> (https://waelio.com)",
   "keywords": [
     "adk",
     "agent",
