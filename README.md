@@ -241,3 +241,6 @@ For package-specific notes, see `frontend/README.md`.
 ## License
 
 MIT
+
+- [https://waelio.com/packages/@waelio/agent](https://waelio.com/packages/@waelio/agent)
+
