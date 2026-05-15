@@ -8,9 +8,9 @@ export default defineConfig({
             includeAssets: ["favicon.svg", "pwa-icon.svg", "pwa-maskable.svg"],
             manifest: {
                 id: "/",
-                name: "Waelio Agent",
-                short_name: "Agent",
-                description: "Installable PWA frontend for the waelio ADK research agent.",
+                name: "gemma.4",
+                short_name: "gemma.4",
+                description: "Installable PWA frontend for the waelio local AI research agent.",
                 theme_color: "#2563eb",
                 background_color: "#0f172a",
                 display: "standalone",

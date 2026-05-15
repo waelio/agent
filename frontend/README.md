@@ -7,9 +7,9 @@
 [![PWA ready](https://img.shields.io/badge/pwa-ready-7c3aed)](https://waelio-agent.pages.dev/)
 [![changelog](https://img.shields.io/badge/changelog-0.1.2-111827)](https://github.com/waelio/agent/blob/default/frontend/CHANGELOG.md)
 
-`@waelio/agent` is the Cloudflare-ready PWA frontend package for the waelio Google ADK project.
+`@waelio/agent` is the PWA frontend package for the waelio local AI project.
 
-It provides the browser UI used to talk to either a local ADK API server or the included Cloudflare Worker backend.
+It provides the browser UI used to talk to the local Python FastAPI server running open-source models via Ollama.
 
 - Live app: `https://waelio-agent.pages.dev/`
 - Repository: `https://github.com/waelio/agent`
@@ -18,17 +18,17 @@ It provides the browser UI used to talk to either a local ADK API server or the 
 ## Highlights
 
 - Installable PWA powered by Vite
-- Simple chat UI for an ADK or Worker backend
+- Simple chat UI for a local FastAPI / Ollama backend
 - Backend URL override saved in the browser
 - Cloudflare Pages friendly static frontend
-- Designed to run locally with the companion Python ADK service
+- Designed to run locally with the companion `local_agent.py` service for zero-cost AI
 
 ## Try it quickly
 
 ### Live demo
 
 - Open `https://waelio-agent.pages.dev/`
-- Save your deployed Worker or ADK backend URL in the sidebar
+- Save your local backend URL (`http://127.0.0.1:8000` or `http://localhost:8000`) in the sidebar
 - Start chatting immediately
 
 ### Local development
@@ -39,7 +39,8 @@ From the repository root:
 pnpm install
 pnpm dev
 source .venv/bin/activate
-adk api_server --port 8000 --allow_origins "regex:http://(127\\.0\\.0\\.1|localhost):3000" .
+pip install fastapi uvicorn ollama
+python local_agent.py
 ```
 
 Then open `http://127.0.0.1:3000`.
@@ -52,7 +53,7 @@ The app resolves its backend in this order:
 2. `VITE_API_BASE_URL` from the environment
 3. `http://localhost:8000` when running on localhost
 
-That makes local development friction-free while still letting deployed builds point at a production Worker or remote ADK server.
+That makes local development friction-free while still letting deployed builds point at a remote FastAPI server if needed.
 
 ## Local development
 
@@ -60,7 +61,7 @@ From the repository root:
 
 1. Install workspace dependencies.
 2. Start the frontend dev server.
-3. Run the ADK backend API server.
+3. Run the local backend API server.
 
 ### Frontend
 
@@ -74,10 +75,10 @@ Or run the frontend package directly:
 
 ### Backend
 
-Start the ADK API server from the repository root:
+Start the local backend API server from the repository root:
 
 - `source .venv/bin/activate`
-- `adk api_server --port 8000 --allow_origins "regex:http://(127\\.0\\.0\\.1|localhost):3000" .`
+- `python local_agent.py`
 
 Then open `http://127.0.0.1:3000`.
 
@@ -86,7 +87,7 @@ The frontend will automatically use `http://localhost:8000` on localhost, so no 
 ## Environment variables
 
 - `VITE_API_BASE_URL` — optional default backend URL for deployed builds
-- `VITE_AGENT_APP_NAME` — app name used for ADK sessions, defaults to `Agent`
+- `VITE_AGENT_APP_NAME` — app name used for sessions, defaults to `gemma.4`
 
 The package ships `frontend/.env.example` values in the published tarball as `.env.example`.
 
@@ -94,8 +95,7 @@ The package ships `frontend/.env.example` values in the published tarball as `.e
 
 This repository is ready to host the **frontend only** on Cloudflare Pages as a PWA.
 
-For production in this repo, the intended backend is now the Worker in
-`../backend/`, deployed separately on Cloudflare Workers.
+The intended backend is the local `local_agent.py` script running on your machine or deployed on a private server.
 
 ### Recommended Cloudflare Pages settings
 
@@ -108,29 +108,18 @@ For production in this repo, the intended backend is now the Worker in
 
 Set these in your Cloudflare Pages project:
 
-- `VITE_API_BASE_URL=https://your-api.example.com`
-- `VITE_AGENT_APP_NAME=Agent`
+- `VITE_API_BASE_URL=https://your-api.example.com` (If deploying your FastAPI backend)
+- `VITE_AGENT_APP_NAME=gemma.4`
 
 If `VITE_API_BASE_URL` is not set, the app still supports a saved browser override, and it only falls back to `http://localhost:8000` on local development hosts.
 
-### Recommended production pairing
-
-- deploy `../backend/` to Cloudflare Workers
-- use the resulting Worker URL as `VITE_API_BASE_URL`
-- deploy the built frontend to Cloudflare Pages
-
 ### Important backend note
 
-Cloudflare Pages hosts the static frontend, **not** the Python ADK backend.
+Cloudflare Pages hosts the static frontend, **not** the Python backend.
 You should either:
 
-- use the included Cloudflare Worker backend in `../backend/`, or
-- run the ADK API server somewhere else (for example a VM, Cloud Run,
-  or another HTTPS host) and allow your Pages domain in backend CORS.
-
-Example production backend command:
-
-- `adk api_server --port 8000 --allow_origins "https://your-pages-domain.example.com" .`
+- run `local_agent.py` on your local machine and use the browser override to point to `http://127.0.0.1:8000`, or
+- run the FastAPI server on a VM or another HTTPS host and allow your Pages domain in the FastAPI backend CORS settings.
 
 ### Troubleshooting workspace deploy errors
 

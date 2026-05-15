@@ -1,7 +1,7 @@
 import "./style.css";
 import { setupPwa } from "./pwa";
 
-const APP_NAME = import.meta.env.VITE_AGENT_APP_NAME?.trim() || "Agent";
+const APP_NAME = import.meta.env.VITE_AGENT_APP_NAME?.trim() || "gemma.4";
 const BACKEND_URL_STORAGE_KEY = "waelio-agent-backend-url";
 const USER_ID_STORAGE_KEY = "waelio-agent-user-id";
 
@@ -106,7 +106,7 @@ function getBackendProblem(rawValue: string): string | null {
   return null;
 }
 
-interface AdkPart {
+interface AgentPart {
   text?: string;
 }
 
@@ -119,9 +119,9 @@ interface BackendErrorResponse {
   detail?: string;
 }
 
-interface AdkEvent {
+interface AgentEvent {
   content?: {
-    parts?: AdkPart[];
+    parts?: AgentPart[];
   };
   error?: string;
   finishReason?: string;
@@ -185,7 +185,7 @@ function renderEmptySocialPage(): void {
   document.title = "Social";
 }
 
-function extractEventText(event: AdkEvent | undefined): string {
+function extractEventText(event: AgentEvent | undefined): string {
   const parts = event?.content?.parts ?? [];
   return parts
     .map((part) => part.text?.trim() ?? "")
@@ -216,8 +216,8 @@ function getFriendlyBackendError(status: number, bodyText: string): string {
   return detailedMessage || "Couldn't get a response from the backend right now.";
 }
 
-function parseSseEvents(bodyText: string): AdkEvent[] {
-  const events: AdkEvent[] = [];
+function parseSseEvents(bodyText: string): AgentEvent[] {
+  const events: AgentEvent[] = [];
 
   for (const block of bodyText.split(/\n\n+/)) {
     const dataLines = block
@@ -235,7 +235,7 @@ function parseSseEvents(bodyText: string): AdkEvent[] {
     }
 
     try {
-      events.push(JSON.parse(payloadText) as AdkEvent);
+      events.push(JSON.parse(payloadText) as AgentEvent);
     } catch {
       // Ignore malformed event chunks.
     }
@@ -380,7 +380,7 @@ async function renderChatPage(): Promise<void> {
 
   chat.hidden = false;
   form.hidden = false;
-  document.title = APP_NAME === "Agent" ? "AI Researcher" : APP_NAME;
+  document.title = APP_NAME === "gemma.4" ? "gemma.4" : APP_NAME;
 
   const defaultComposerPlaceholder = input.placeholder;
   const userId = getOrCreateUserId();
@@ -542,7 +542,7 @@ async function renderChatPage(): Promise<void> {
 
   if (!backendUrl) {
     addMsg(
-      "Enter a backend URL above to start chatting. You can point this app at a local ADK API server or the included Cloudflare Worker backend.",
+      "Enter a backend URL above to start chatting. You can point this app at a local FastAPI server or any compatible backend.",
       "agent",
     );
     return;

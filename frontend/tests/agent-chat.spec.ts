@@ -10,7 +10,7 @@ test.describe('Agent Frontend', () => {
     // Expect the drawer title to be visible.
     const drawerTitle = page.locator('.drawer-title');
     await expect(drawerTitle).toBeVisible();
-    await expect(drawerTitle).toHaveText('Agent');
+    await expect(drawerTitle).toHaveText('gemma.4');
   });
 
   test('can configure backend URL', async ({ page }) => {

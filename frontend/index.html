@@ -9,7 +9,7 @@
     />
     <meta
       name="description"
-      content="Installable PWA frontend for the waelio ADK research agent."
+      content="Installable PWA frontend for the waelio local AI research agent."
     />
     <meta name="theme-color" content="#2563eb" />
     <title>AI Researcher</title>
@@ -17,9 +17,9 @@
   <body>
     <div class="app-shell">
       <aside class="drawer" aria-label="App drawer">
-        <div class="drawer-title">Agent</div>
+        <div class="drawer-title">gemma.4</div>
         <p class="drawer-subtitle">
-          Cloudflare-ready PWA frontend for your ADK or Worker chat backend.
+          Cloudflare-ready PWA frontend for your local FastAPI chat backend.
         </p>
         <nav class="drawer-nav" aria-label="Primary navigation">
           <a class="drawer-link" data-path="/" href="/">Chat</a>
@@ -65,12 +65,12 @@
             </a>
             <p class="key-help-note">
               Local development uses <code>http://localhost:8000</code>
-              automatically. In production, save any ADK API or Worker URL here.
+              automatically. In production, save any deployed FastAPI URL here.
             </p>
           </div>
           <p class="drawer-hint">
-            Connect this frontend to an ADK API server or the included
-            Cloudflare Worker backend.
+            Connect this frontend to a local FastAPI server or any
+            compatible backend.
           </p>
         </div>
       </aside>
