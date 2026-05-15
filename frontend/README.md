@@ -1,27 +1,11 @@
 # @waelio/agent
 
-<p align="center">
-    <img
-        src="https://raw.githubusercontent.com/waelio/agent/default/frontend/src/assets/hero.png"
-        alt="@waelio/agent hero artwork"
-        width="320"
-    />
-</p>
+![@waelio/agent hero artwork](https://raw.githubusercontent.com/waelio/agent/default/frontend/src/assets/hero.png)
 
-<p align="center">
-    <a href="https://www.npmjs.com/package/@waelio/agent">
-        <img alt="npm version" src="https://img.shields.io/npm/v/%40waelio%2Fagent?label=npm" />
-    </a>
-    <a href="https://waelio-agent.pages.dev/">
-        <img alt="live demo" src="https://img.shields.io/badge/demo-live-2563eb" />
-    </a>
-    <a href="https://waelio-agent.pages.dev/">
-        <img alt="PWA ready" src="https://img.shields.io/badge/pwa-ready-7c3aed" />
-    </a>
-    <a href="https://github.com/waelio/agent/blob/default/frontend/CHANGELOG.md">
-        <img alt="changelog" src="https://img.shields.io/badge/changelog-0.1.2-111827" />
-    </a>
-</p>
+[![npm version](https://img.shields.io/npm/v/%40waelio%2Fagent?label=npm)](https://www.npmjs.com/package/@waelio/agent)
+[![live demo](https://img.shields.io/badge/demo-live-2563eb)](https://waelio-agent.pages.dev/)
+[![PWA ready](https://img.shields.io/badge/pwa-ready-7c3aed)](https://waelio-agent.pages.dev/)
+[![changelog](https://img.shields.io/badge/changelog-0.1.2-111827)](https://github.com/waelio/agent/blob/default/frontend/CHANGELOG.md)
 
 `@waelio/agent` is the Cloudflare-ready PWA frontend package for the waelio Google ADK project.
 
