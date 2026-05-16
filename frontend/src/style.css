@@ -681,6 +681,8 @@ a {
     width: 100%;
     padding: 10px 16px;
     flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
     align-items: center;
     justify-content: space-between;
     border-right: 0;
@@ -694,8 +696,15 @@ a {
   }
 
   .drawer-subtitle,
+  .drawer-hint,
+  .install-btn {
+    display: none !important;
+  }
+  
   .drawer-meta {
-    display: none;
+    margin-top: 0;
+    display: flex;
+    align-items: center;
   }
 
   .drawer-nav {
