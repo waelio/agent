@@ -253,40 +253,24 @@ a {
 
 /* ── Theme switcher ───────────────────────────────────────────── */
 
-.theme-switcher {
-  display: flex;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 999px;
+.theme-toggle {
   border: 1px solid var(--theme-btn-border);
-  background: var(--theme-btn-bg);
-}
-
-.theme-btn {
-  flex: 1;
-  border: 0;
   border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 0.72rem;
+  padding: 6px 14px;
+  font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   cursor: pointer;
-  background: transparent;
+  background: var(--theme-btn-bg);
   color: var(--theme-btn-text);
-  transition:
-    background 0.2s ease,
-    color 0.2s ease,
-    transform 0.15s ease;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+  white-space: nowrap;
 }
 
-.theme-btn:hover {
-  color: var(--text-primary);
-  transform: scale(1.04);
-}
-
-.theme-btn.is-active {
+.theme-toggle:hover {
   background: var(--theme-btn-active);
   color: var(--theme-btn-text-act);
+  transform: scale(1.04);
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
 }
 

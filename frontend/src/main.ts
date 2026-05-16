@@ -11,9 +11,11 @@ type Theme = "dark" | "dim" | "light";
 function applyTheme(theme: Theme): void {
   document.documentElement.setAttribute("data-theme", theme);
   try { localStorage.setItem(THEME_STORAGE_KEY, theme); } catch { /* ignore */ }
-  document.querySelectorAll<HTMLButtonElement>(".theme-btn[data-theme]").forEach((btn) => {
-    btn.classList.toggle("is-active", btn.dataset.theme === theme);
-  });
+  const toggleBtn = document.getElementById("theme-toggle");
+  if (toggleBtn) {
+    const iconMap = { dark: "🌑", dim: "🌗", light: "☀️" };
+    toggleBtn.textContent = `${iconMap[theme]} Theme`;
+  }
 }
 
 function initTheme(): void {
@@ -27,12 +29,14 @@ function initTheme(): void {
 
 initTheme();
 
-document.querySelectorAll<HTMLButtonElement>(".theme-btn[data-theme]").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const t = btn.dataset.theme as Theme;
-    if (t === "dark" || t === "dim" || t === "light") applyTheme(t);
+const toggleBtn = document.getElementById("theme-toggle");
+if (toggleBtn) {
+  toggleBtn.addEventListener("click", () => {
+    const current = document.documentElement.getAttribute("data-theme") as Theme || "dark";
+    const nextMap: Record<Theme, Theme> = { dark: "dim", dim: "light", light: "dark" };
+    applyTheme(nextMap[current]);
   });
-});
+}
 
 type BackendSource = "saved" | "env" | "local" | "unset";
 
