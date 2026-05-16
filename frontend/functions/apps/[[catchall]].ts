@@ -1,6 +1,19 @@
+export async function onRequestOptions() {
+  return new Response(null, {
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, ngrok-skip-browser-warning",
+      "Access-Control-Max-Age": "86400"
+    }
+  });
+}
+
 export async function onRequestPost(context) {
-  // Return a dummy session ID to satisfy the frontend's session requirement
   return new Response(JSON.stringify({ id: "serverless-session" }), {
-    headers: { "Content-Type": "application/json" }
+    headers: { 
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*"
+    }
   });
 }

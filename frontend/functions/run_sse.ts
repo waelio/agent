@@ -1,3 +1,14 @@
+export async function onRequestOptions() {
+  return new Response(null, {
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, ngrok-skip-browser-warning",
+      "Access-Control-Max-Age": "86400"
+    }
+  });
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
   const data = await request.json();
@@ -57,7 +68,8 @@ export async function onRequestPost(context) {
       headers: { 
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
-          "Connection": "keep-alive"
+          "Connection": "keep-alive",
+          "Access-Control-Allow-Origin": "*"
       }
   });
 }

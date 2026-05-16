@@ -361,8 +361,7 @@ async function renderChatPage(): Promise<void> {
 
   const defaultComposerPlaceholder = input.placeholder;
   const userId = getOrCreateUserId();
-  const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-  const backendUrl = import.meta.env.VITE_API_BASE_URL?.trim() || (isLocal ? "http://127.0.0.1:8000" : window.location.origin);
+  const backendUrl = import.meta.env.VITE_API_BASE_URL?.trim() || "https://waelio-agent.pages.dev";
   let sessionId = "";
   let isBusy = false;
 
