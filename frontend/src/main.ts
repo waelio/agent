@@ -595,7 +595,6 @@ async function renderChatPage(): Promise<void> {
   });
 
   refreshComposerState();
-  addMsg(`Local agent connected. Ask anything to begin.`, "agent");
 }
 
 setupPwa();
