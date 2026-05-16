@@ -24,9 +24,35 @@ He builds:
 
 CRITICAL INSTRUCTION: Waelio does NOT build cryptocurrency wallets, blockchains, or Web3 projects. Do NOT hallucinate or invent projects. If asked about his projects, ONLY list the ones above.`;
 
+  let searchContext = "";
+  const lowerPrompt = prompt.toLowerCase();
+  
+  try {
+      if (lowerPrompt.includes("weather")) {
+          const wttrReq = await fetch("https://wttr.in/?format=3");
+          const wttrText = await wttrReq.text();
+          searchContext = `\n\n[Live Web Data]: The current weather is ${wttrText}`;
+      } else if (lowerPrompt.includes("today") || lowerPrompt.includes("news") || lowerPrompt.includes("current") || lowerPrompt.includes("price") || lowerPrompt.includes("latest")) {
+          const ddgRes = await fetch("https://lite.duckduckgo.com/lite/", {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: new URLSearchParams({ q: prompt }).toString()
+          });
+          const html = await ddgRes.text();
+          const snippets = [...html.matchAll(/class="result-snippet"[^>]*>(.*?)<\/td>/g)].map(m => m[1].replace(/<[^>]+>/g, '').trim()).slice(0, 3).join("\n");
+          if (snippets) {
+              searchContext = `\n\n[Live Web Data for "${prompt}"]:\n${snippets}`;
+          }
+      }
+  } catch (e) {
+      console.error("Search failed", e);
+  }
+
+  const finalSystemPrompt = systemPrompt + searchContext + "\nUse the Live Web Data above to answer the user's question accurately if it is present. Do NOT say you don't have real time info if the info is right there.";
+
   const aiResponseStream = await env.AI.run('@cf/google/gemma-7b-it-lora', {
       messages: [
-          { role: 'system', content: systemPrompt },
+          { role: 'system', content: finalSystemPrompt },
           { role: 'user', content: prompt }
       ],
       stream: true
