@@ -1,6 +1,14 @@
 import "./style.css";
 import { setupPwa } from "./pwa";
 
+const setVh = () => {
+  const vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty('--vh', `${vh}px`);
+};
+setVh();
+window.addEventListener('resize', setVh);
+window.addEventListener('orientationchange', setVh);
+
 const APP_NAME = import.meta.env.VITE_AGENT_APP_NAME?.trim() || "@waelio/agent";
 const BACKEND_URL_STORAGE_KEY = "waelio-agent-backend-url";
 const USER_ID_STORAGE_KEY = "waelio-agent-user-id";

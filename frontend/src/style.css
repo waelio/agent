@@ -149,7 +149,8 @@
 
 body {
   margin: 0;
-  height: 100dvh;
+  height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
   overflow: hidden;
   background: var(--grad-body);
   color: var(--text-primary);
@@ -157,7 +158,8 @@ body {
 
 #app {
   display: flex;
-  height: 100dvh;
+  height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
   width: 100%;
   overflow: hidden;
   position: relative;
@@ -177,7 +179,8 @@ a {
 /* ── Layout ───────────────────────────────────────────────────── */
 
 .app-shell {
-  height: 100dvh;
+  height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
   width: 100%;
   overflow: hidden;
   display: flex;
