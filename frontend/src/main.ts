@@ -333,11 +333,7 @@ async function generateReply(backendUrl: string, userId: string, sessionId: stri
 
 async function renderChatPage(): Promise<void> {
   const chat = document.getElementById("chat");
-  const backendForm = document.getElementById("backend-form");
-  const backendInput = document.getElementById("backend-url");
-  const backendSaveButton = document.getElementById("backend-save");
-  const backendResetButton = document.getElementById("backend-reset");
-  const backendStatus = document.getElementById("backend-status");
+
   const form = document.getElementById("form");
   const input = document.getElementById("input");
   const btn = document.getElementById("btn");
@@ -346,25 +342,7 @@ async function renderChatPage(): Promise<void> {
     throw new Error("Missing #chat container.");
   }
 
-  if (!(backendForm instanceof HTMLFormElement)) {
-    throw new Error("Missing #backend-form element.");
-  }
 
-  if (!(backendInput instanceof HTMLInputElement)) {
-    throw new Error("Missing #backend-url field.");
-  }
-
-  if (!(backendSaveButton instanceof HTMLButtonElement)) {
-    throw new Error("Missing #backend-save button.");
-  }
-
-  if (!(backendResetButton instanceof HTMLButtonElement)) {
-    throw new Error("Missing #backend-reset button.");
-  }
-
-  if (!(backendStatus instanceof HTMLParagraphElement)) {
-    throw new Error("Missing #backend-status element.");
-  }
 
   if (!(form instanceof HTMLFormElement)) {
     throw new Error("Missing #form element.");
@@ -384,9 +362,7 @@ async function renderChatPage(): Promise<void> {
 
   const defaultComposerPlaceholder = input.placeholder;
   const userId = getOrCreateUserId();
-  const initialBackend = getConfiguredBackend();
-  let backendUrl = initialBackend.url;
-  let backendSource = initialBackend.source;
+  const backendUrl = import.meta.env.VITE_API_BASE_URL?.trim() || "http://127.0.0.1:8000";
   let sessionId = "";
   let isBusy = false;
 
@@ -399,10 +375,7 @@ async function renderChatPage(): Promise<void> {
     return el;
   };
 
-  const setBackendStatus = (message: string, state: "idle" | "success" | "error" = "idle"): void => {
-    backendStatus.textContent = message;
-    backendStatus.dataset.state = state;
-  };
+
 
   const refreshComposerState = (): void => {
     const disabled = isBusy || !backendUrl;
@@ -418,31 +391,8 @@ async function renderChatPage(): Promise<void> {
     sessionId = "";
   };
 
-  const syncBackendUi = (): void => {
-    backendInput.value = backendUrl;
-
-    if (backendSource === "saved" && backendUrl) {
-      setBackendStatus("Saved backend URL ready.", "success");
-      return;
-    }
-
-    if (backendSource === "env" && backendUrl) {
-      setBackendStatus("Using the configured backend URL.");
-      return;
-    }
-
-    if (backendSource === "local" && backendUrl) {
-      setBackendStatus("Using the local backend at http://localhost:8000.");
-      return;
-    }
-
-    setBackendStatus("Enter a backend URL to start chatting.");
-  };
-
   const setBusyState = (busy: boolean): void => {
     isBusy = busy;
-    backendSaveButton.disabled = busy;
-    backendResetButton.disabled = busy;
     refreshComposerState();
   };
 
@@ -470,11 +420,9 @@ async function renderChatPage(): Promise<void> {
 
       thinking.remove();
       addMsg(reply, "agent");
-      syncBackendUi();
     } catch (error: unknown) {
       thinking.remove();
       const message = error instanceof Error ? error.message : "Couldn't get a response right now.";
-      setBackendStatus(message, "error");
       addMsg(message, "agent");
     } finally {
       setBusyState(false);
@@ -482,49 +430,7 @@ async function renderChatPage(): Promise<void> {
     }
   };
 
-  backendForm.addEventListener("submit", async (event: SubmitEvent) => {
-    event.preventDefault();
 
-    const nextValue = backendInput.value.trim();
-    const problem = getBackendProblem(nextValue);
-
-    if (problem) {
-      setBackendStatus(problem, "error");
-      backendInput.focus();
-      return;
-    }
-
-    backendUrl = normalizeBackendUrl(nextValue);
-    backendSource = "saved";
-    writeStoredBackendUrl(backendUrl);
-    resetChat();
-
-    syncBackendUi();
-    refreshComposerState();
-    addMsg("Backend saved in this browser. Ask anything to begin.", "agent");
-
-    if (!input.disabled) {
-      input.focus();
-    }
-  });
-
-  backendResetButton.addEventListener("click", () => {
-    writeStoredBackendUrl("");
-    const nextBackend = getConfiguredBackend(true);
-    backendUrl = nextBackend.url;
-    backendSource = nextBackend.source;
-    resetChat();
-
-    syncBackendUi();
-    refreshComposerState();
-    addMsg(
-      backendUrl
-        ? "Saved backend override cleared. Using the default backend again."
-        : "Backend cleared. Enter a backend URL to continue.",
-      "agent",
-    );
-    backendInput.focus();
-  });
 
   form.addEventListener("submit", async (event: SubmitEvent) => {
     event.preventDefault();
@@ -537,28 +443,8 @@ async function renderChatPage(): Promise<void> {
     await sendMessage(text);
   });
 
-  syncBackendUi();
   refreshComposerState();
-
-  if (!backendUrl) {
-    addMsg(
-      "Enter a backend URL above to start chatting. You can point this app at a local FastAPI server or any compatible backend.",
-      "agent",
-    );
-    return;
-  }
-
-  if (backendSource === "saved") {
-    addMsg(`Connected to ${backendUrl}. Ask anything to begin.`, "agent");
-    return;
-  }
-
-  if (backendSource === "env") {
-    addMsg(`Using the configured backend at ${backendUrl}. Ask anything to begin.`, "agent");
-    return;
-  }
-
-  addMsg(`Using the local backend at ${backendUrl}. Ask anything to begin.`, "agent");
+  addMsg(`Local agent connected. Ask anything to begin.`, "agent");
 }
 
 setupPwa();

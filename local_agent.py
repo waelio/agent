@@ -15,6 +15,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+def root():
+    return {
+        "status": "online",
+        "message": "Agent API is running on port 8000! Paste this URL into your frontend."
+    }
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -59,4 +66,4 @@ async def run_sse(request: Request):
 if __name__ == "__main__":
     import uvicorn
     # The UI connects to port 8000 by default for localhost
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

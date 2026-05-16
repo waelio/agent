@@ -29,45 +29,8 @@
           <button id="install-btn" class="install-btn" hidden>
             Install app
           </button>
-          <form id="backend-form" class="backend-form">
-            <label class="backend-label" for="backend-url"> Backend URL </label>
-            <input
-              id="backend-url"
-              class="backend-input"
-              type="url"
-              autocomplete="off"
-              spellcheck="false"
-              placeholder="https://your-api.example.com"
-            />
-            <div class="backend-actions">
-              <button id="backend-save" class="backend-save" type="submit">
-                Save URL
-              </button>
-              <button id="backend-reset" class="backend-reset" type="button">
-                Reset
-              </button>
-            </div>
-            <p
-              id="backend-status"
-              class="backend-status"
-              role="status"
-              aria-live="polite"
-            ></p>
-          </form>
-          <div class="key-help">
-            <a
-              class="key-help-link"
-              href="https://github.com/waelio/agent#frontend-deployment-on-cloudflare-pages"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Deploy the backend
-            </a>
-            <p class="key-help-note">
-              Local development uses <code>http://localhost:8000</code>
-              automatically. In production, save any deployed FastAPI URL here.
-            </p>
-          </div>
+
+
           <p class="drawer-hint">
             Connect this frontend to a local FastAPI server or any
             compatible backend.
