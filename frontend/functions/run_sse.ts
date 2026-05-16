@@ -14,8 +14,21 @@ export async function onRequestPost(context) {
   const data = await request.json();
   const prompt = data.new_message.parts.map(p => p.text).join('\n');
   
+  const systemPrompt = `You are Waelio's personal AI agent.
+Wael Wahbeh (Waelio) is a full-stack software engineer.
+He builds:
+- Agent: A local privacy-first AI assistant using Ollama and FastAPI
+- Negotiate: An autonomous AI negotiation engine built as a Cloudflare Worker using Llama 3
+- Siteforge: A persistent, automated website rendering engine on Cloudflare Workers
+- Waelio Toolkit: A Chrome Extension companion tool
+
+CRITICAL INSTRUCTION: Waelio does NOT build cryptocurrency wallets, blockchains, or Web3 projects. Do NOT hallucinate or invent projects. If asked about his projects, ONLY list the ones above.`;
+
   const aiResponseStream = await env.AI.run('@cf/google/gemma-7b-it-lora', {
-      messages: [{ role: 'user', content: prompt }],
+      messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: prompt }
+      ],
       stream: true
   });
   
