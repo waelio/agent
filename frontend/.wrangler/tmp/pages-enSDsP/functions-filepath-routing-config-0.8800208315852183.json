@@ -1,0 +1,37 @@
+{
+  "routes": [
+    {
+      "routePath": "/apps/:catchall*",
+      "mountPath": "/apps",
+      "method": "OPTIONS",
+      "module": [
+        "apps/[[catchall]].ts:onRequestOptions"
+      ]
+    },
+    {
+      "routePath": "/apps/:catchall*",
+      "mountPath": "/apps",
+      "method": "POST",
+      "module": [
+        "apps/[[catchall]].ts:onRequestPost"
+      ]
+    },
+    {
+      "routePath": "/run_sse",
+      "mountPath": "/",
+      "method": "OPTIONS",
+      "module": [
+        "run_sse.ts:onRequestOptions"
+      ]
+    },
+    {
+      "routePath": "/run_sse",
+      "mountPath": "/",
+      "method": "POST",
+      "module": [
+        "run_sse.ts:onRequestPost"
+      ]
+    }
+  ],
+  "baseURL": "/"
+}

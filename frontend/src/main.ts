@@ -397,7 +397,8 @@ async function renderChatPage(): Promise<void> {
 
   const defaultComposerPlaceholder = input.placeholder;
   const userId = getOrCreateUserId();
-  const backendUrl = import.meta.env.VITE_API_BASE_URL?.trim() || "http://localhost:8000";
+  const backendUrl = import.meta.env.VITE_API_BASE_URL?.trim() ||
+    (isLocalhost(window.location.hostname) ? "http://localhost:8000" : window.location.origin);
   let sessionId = "";
   let isBusy = false;
 
