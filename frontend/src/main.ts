@@ -252,6 +252,7 @@ async function createSession(backendUrl: string, userId: string): Promise<string
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
       },
       body: JSON.stringify({}),
     });
@@ -288,6 +289,7 @@ async function generateReply(backendUrl: string, userId: string, sessionId: stri
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
       },
       body: JSON.stringify({
         app_name: APP_NAME,
@@ -362,7 +364,7 @@ async function renderChatPage(): Promise<void> {
 
   const defaultComposerPlaceholder = input.placeholder;
   const userId = getOrCreateUserId();
-  const backendUrl = import.meta.env.VITE_API_BASE_URL?.trim() || "http://127.0.0.1:8000";
+  const backendUrl = import.meta.env.VITE_API_BASE_URL?.trim() || "";
   let sessionId = "";
   let isBusy = false;
 
