@@ -1,6 +1,6 @@
 {
     "name": "agent-workspace",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "private": false,
     "description": "A comprehensive monorepo workspace for the Waelio Agent ecosystem, housing the Cloudflare-ready PWA frontend and backend services for an AI-powered researcher agent.",
     "author": "Wael Wahbeh <wahbehw@gmail.com> (https://waelio.com)",
