@@ -41,10 +41,10 @@ async def run_sse(request: Request):
     async def event_stream():
         try:
             # We connect directly to Ollama running locally.
-            # Change 'gemma.4' to 'deepseek-coder' or 'qwen' if you prefer!
+            # Change 'gemma4' to 'deepseek-coder' or 'qwen' if you prefer!
             client = ollama.AsyncClient()
             response_stream = await client.chat(
-                model='gemma.4', 
+                model='gemma4', 
                 messages=[{'role': 'user', 'content': user_text}],
                 stream=True
             )
