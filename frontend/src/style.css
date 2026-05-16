@@ -419,6 +419,54 @@ a {
   flex-direction: column;
 }
 
+/* ── Answer navigation bar ────────────────────────────────────── */
+
+#answer-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--border-form);
+  background: var(--bg-drawer);
+  backdrop-filter: blur(12px);
+}
+
+.ans-nav-btn {
+  border: 1px solid var(--border-select);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: var(--bg-input);
+  color: var(--text-accent);
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease,
+    opacity 0.2s ease;
+}
+
+.ans-nav-btn:hover:not(:disabled) {
+  background: var(--border-select);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.ans-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.ans-counter {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  min-width: 48px;
+  text-align: center;
+}
+
 #chat {
   flex: 1;
   overflow-y: auto;

@@ -401,6 +401,38 @@ async function renderChatPage(): Promise<void> {
   let sessionId = "";
   let isBusy = false;
 
+  // ── In-memory history ──────────────────────────────────────────
+  const sentHistory: string[] = [];    // user messages sent this session
+  let historyIndex = -1;               // -1 = not navigating
+  let historyDraft = "";              // saves typed-but-unsent text
+  const answerWrappers: HTMLDivElement[] = []; // agent answer wrappers
+  let answerIndex = -1;               // which answer we're viewing
+
+  // ── Answer nav elements ────────────────────────────────────────
+  const answerNav    = document.getElementById("answer-nav");
+  const ansPrev      = document.getElementById("ans-prev") as HTMLButtonElement | null;
+  const ansNext      = document.getElementById("ans-next") as HTMLButtonElement | null;
+  const ansCounter   = document.getElementById("ans-counter");
+
+  const refreshAnswerNav = (): void => {
+    const count = answerWrappers.length;
+    if (!answerNav) return;
+    answerNav.hidden = count === 0;
+    if (ansCounter) ansCounter.textContent = count === 0 ? "" : `${answerIndex + 1} / ${count}`;
+    if (ansPrev)  ansPrev.disabled  = answerIndex <= 0;
+    if (ansNext)  ansNext.disabled  = answerIndex >= count - 1;
+  };
+
+  const scrollToAnswer = (idx: number): void => {
+    if (idx < 0 || idx >= answerWrappers.length) return;
+    answerIndex = idx;
+    answerWrappers[idx].scrollIntoView({ behavior: "smooth", block: "start" });
+    refreshAnswerNav();
+  };
+
+  ansPrev?.addEventListener("click", () => scrollToAnswer(answerIndex - 1));
+  ansNext?.addEventListener("click", () => scrollToAnswer(answerIndex + 1));
+
   // --- Populate model selector ---
   const { models, default: defaultModel } = await fetchModels(backendUrl);
   if (models.length > 0) {
@@ -449,6 +481,12 @@ async function renderChatPage(): Promise<void> {
       wrapper.appendChild(copyBtn);
       chat.appendChild(wrapper);
       chat.scrollTop = chat.scrollHeight;
+
+      // Track for navigation
+      answerWrappers.push(wrapper);
+      answerIndex = answerWrappers.length - 1;
+      refreshAnswerNav();
+
       return el;
     }
 
@@ -491,6 +529,11 @@ async function renderChatPage(): Promise<void> {
   const sendMessage = async (text: string): Promise<void> => {
     if (!backendUrl) return;
 
+    // Save to sent history
+    sentHistory.push(text);
+    historyIndex = -1;
+    historyDraft = "";
+
     const model = getSelectedModel();
     setBusyState(true);
     addMsg(text, "user");
@@ -510,6 +553,33 @@ async function renderChatPage(): Promise<void> {
       input.focus();
     }
   };
+
+  // ── ↑/↓ to browse sent messages ───────────────────────────────
+  input.addEventListener("keydown", (e: KeyboardEvent) => {
+    if (e.key === "ArrowUp") {
+      if (sentHistory.length === 0) return;
+      e.preventDefault();
+      if (historyIndex === -1) {
+        historyDraft = input.value;          // save unsent draft
+        historyIndex = sentHistory.length - 1;
+      } else if (historyIndex > 0) {
+        historyIndex--;
+      }
+      input.value = sentHistory[historyIndex];
+      input.setSelectionRange(input.value.length, input.value.length);
+    } else if (e.key === "ArrowDown") {
+      if (historyIndex === -1) return;
+      e.preventDefault();
+      if (historyIndex < sentHistory.length - 1) {
+        historyIndex++;
+        input.value = sentHistory[historyIndex];
+      } else {
+        historyIndex = -1;
+        input.value = historyDraft;
+      }
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+  });
 
   form.addEventListener("submit", async (event: SubmitEvent) => {
     event.preventDefault();
