@@ -1,6 +1,6 @@
 # waelio agent
 
-`waelio/agent` is a local AI research agent with an installable Vite frontend.
+`waelio/agent` is a local AI research agent with an installable Vite PWA frontend and a Python FastAPI backend powered by [Ollama](https://ollama.com/).
 
 The repository contains:
 
@@ -9,43 +9,71 @@ The repository contains:
 - a PWA frontend app in `frontend/`
 - Cloudflare Pages-friendly PWA output for the frontend
 
+---
+
 ## What is in this repo
 
-### Local FastAPI Agent
+### Local FastAPI Agent (`local_agent.py`)
 
-The primary backend is a local Python script running via FastAPI and Ollama.
+The primary backend connects directly to Ollama — zero cloud cost, fully private.
 
-- backend entry: `local_agent.py`
-- model: `gemma.4` (or any local model pulled via Ollama)
+| Endpoint | Method | Description |
+|---|---|---|
+| `/` | GET | Health check |
+| `/health` | GET | Status ping |
+| `/models` | GET | List all locally pulled Ollama models |
+| `/apps/{app_id}/users/{user_id}/sessions` | POST | Create a session |
+| `/run_sse` | POST | Stream a response from a selected model |
 
-Instead of requiring cloud APIs, it connects directly to Ollama, providing a zero-cost, privacy-first local chat experience.
+The `/run_sse` endpoint accepts an optional `model` field in the request body. If omitted, it defaults to `qwen3:8b`.
 
-### Frontend
+### Supported Models (locally pulled via Ollama)
 
-The frontend lives in `frontend/` and is published as:
+| Model | Size | Notes |
+|---|---|---|
+| `qwen3:8b` | 5.2 GB | Default model |
+| `gemma4:latest` | 9.6 GB | High quality, requires more GPU memory |
+| `llama3:latest` | 4.7 GB | Fast and general purpose |
+| `qwen3.5:4b` | 3.4 GB | Lightweight |
+| `qwen3.5:2b` | 2.7 GB | Very lightweight |
+| `qwen3:0.6b` | 522 MB | Minimal footprint |
 
-- npm package: `@waelio/agent`
+Pull any model with:
 
-It is built with Vite and includes:
+```bash
+ollama pull qwen3:8b
+```
 
-- chat UI for the FastAPI backend
-- installable PWA support
-- Cloudflare Pages SPA routing
-- environment-based backend URL configuration
+### Frontend (`frontend/`)
+
+Published as npm package `@waelio/agent`. Built with Vite + TypeScript. Includes:
+
+- **Model selector** — dropdown populated live from the `/models` API; switches models per request
+- **Three-way theme switcher** — 🌑 Dark / 🌗 Dim / ☀️ Light, toggled from the sidebar
+- **Copy button** — appears on hover over any agent reply; copies to clipboard with ✓ feedback
+- **Answer navigation bar** — ↑ Prev / Next ↓ buttons to jump between agent responses in the chat
+- **Input history** — press ↑ / ↓ in the text field to recall previously sent messages (terminal-style)
+- **Installable PWA** — install to home screen on mobile and desktop
+- **Cloudflare Pages SPA routing**
+- **Environment-based backend URL configuration**
+
+---
 
 ## Requirements
 
 ### Backend
 
 - Python 3.10+
-- virtual environment in `.venv/`
+- Virtual environment in `.venv/`
 - `fastapi`, `uvicorn`, `ollama`
-- [Ollama](https://ollama.com/) installed and running locally with the `gemma.4` model (or your preferred model)
+- [Ollama](https://ollama.com/) installed and running locally
 
 ### Frontend
 
 - pnpm
-- Node.js compatible with the installed Vite toolchain
+- Node.js `^20.19.0` or `>=22.12.0`
+
+---
 
 ## Local development
 
@@ -53,60 +81,73 @@ It is built with Vite and includes:
 
 From the repository root:
 
-- `pnpm install`
+```bash
+pnpm install
+```
 
 Create and activate the Python virtual environment:
 
-- `python3 -m venv .venv`
-- `source .venv/bin/activate`
-- `pip install fastapi uvicorn ollama`
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install fastapi uvicorn ollama
+```
 
-### 2. Run the frontend
+### 2. Pull at least one model
 
-From the repository root:
+```bash
+ollama pull qwen3:8b
+```
 
-- `pnpm dev`
-
-This starts Vite on `http://127.0.0.1:3000`.
+> **Tip:** If Ollama fails with `no space left on device`, clean up partial blobs:
+> ```bash
+> find ~/.ollama/models/blobs/ -name "*-partial*" -delete
+> ```
 
 ### 3. Run the API backend
 
-Start the local backend from the repository root:
+```bash
+source .venv/bin/activate
+python local_agent.py
+```
 
-- `source .venv/bin/activate`
-- `python local_agent.py`
+This starts the FastAPI server on `http://127.0.0.1:8000`.
 
-This will start the FastAPI server on `http://127.0.0.1:8000`.
+### 4. Run the frontend
+
+From the repository root:
+
+```bash
+pnpm dev
+```
+
+This starts Vite on `http://127.0.0.1:3000`. The frontend auto-connects to `http://localhost:8000` on localhost.
+
+---
 
 ## Frontend deployment on Cloudflare Pages
 
-The frontend is set up to deploy as a static PWA on Cloudflare Pages.
-
-For production, the simplest setup in this repository is:
-
-1. run your FastAPI backend on a VM or securely expose your local instance
-2. build the frontend with `VITE_API_BASE_URL` pointed at that backend
-3. deploy `frontend/dist` to Cloudflare Pages
+1. Run your FastAPI backend on a VM or securely expose your local instance
+2. Build the frontend with `VITE_API_BASE_URL` pointing at that backend
+3. Deploy `frontend/dist` to Cloudflare Pages
 
 ### Recommended Pages settings
 
-- project root: repository root
-- build command: `pnpm --filter ./frontend build`
-- output directory: `frontend/dist`
-- deploy command: leave empty
+| Setting | Value |
+|---|---|
+| Project root | repository root |
+| Build command | `pnpm --filter ./frontend build` |
+| Output directory | `frontend/dist` |
+| Deploy command | _(leave empty)_ |
 
 ### Required environment variables
 
-Set these in Cloudflare Pages:
+```
+VITE_API_BASE_URL=https://your-api.example.com
+VITE_AGENT_APP_NAME=@waelio/agent
+```
 
-- `VITE_API_BASE_URL=https://your-api.example.com`
-- `VITE_AGENT_APP_NAME=gemma.4`
-
-Runtime behavior:
-
-- on localhost, the frontend falls back to `http://localhost:8000`
-- in production without `VITE_API_BASE_URL`, the frontend waits for a configured backend URL instead of calling the Pages origin
-- users can also save a backend URL from the app sidebar in the browser
+---
 
 ## PWA notes
 
@@ -118,26 +159,28 @@ The frontend build generates:
 - `_redirects` for SPA routing
 - `_headers` for Cloudflare Pages response headers
 
-The app also includes an install button for supported browsers.
+---
 
 ## Build
 
-From the repository root:
+```bash
+pnpm build
+```
 
-- `pnpm build`
+Outputs to `frontend/dist`.
 
-This builds the frontend into `frontend/dist`.
+---
 
 ## Published package
 
-The frontend package is published to npm as:
-
-- `@waelio/agent`
+```
+@waelio/agent
+```
 
 For package-specific notes, see `frontend/README.md`.
 
+---
+
 ## License
 
-MIT
-
-- [https://waelio.com/packages/@waelio/agent](https://waelio.com/packages/@waelio/agent)
+MIT — [https://waelio.com/packages/@waelio/agent](https://waelio.com/packages/@waelio/agent)
