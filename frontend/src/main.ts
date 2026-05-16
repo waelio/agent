@@ -1,7 +1,7 @@
 import "./style.css";
 import { setupPwa } from "./pwa";
 
-const APP_NAME = import.meta.env.VITE_AGENT_APP_NAME?.trim() || "gemma.4";
+const APP_NAME = import.meta.env.VITE_AGENT_APP_NAME?.trim() || "@waelio/agent";
 const BACKEND_URL_STORAGE_KEY = "waelio-agent-backend-url";
 const USER_ID_STORAGE_KEY = "waelio-agent-user-id";
 
@@ -357,7 +357,7 @@ async function renderChatPage(): Promise<void> {
 
   chat.hidden = false;
   form.hidden = false;
-  document.title = APP_NAME === "gemma.4" ? "gemma.4" : APP_NAME;
+  document.title = APP_NAME === "@waelio/agent" ? "Agent" : APP_NAME;
 
   const defaultComposerPlaceholder = input.placeholder;
   const userId = getOrCreateUserId();

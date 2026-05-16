@@ -41,10 +41,10 @@ async def run_sse(request: Request):
     async def event_stream():
         try:
             # We connect directly to Ollama running locally.
-            # Change 'gemma4' to 'deepseek-coder' or 'qwen' if you prefer!
+            # We switched to 'llama3' (4.7GB) instead of 'gemma4' (9.6GB) so it easily fits in your Mac's GPU memory!
             client = ollama.AsyncClient()
             response_stream = await client.chat(
-                model='gemma4', 
+                model='llama3:latest', 
                 messages=[{'role': 'user', 'content': user_text}],
                 stream=True
             )
