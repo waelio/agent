@@ -13,6 +13,7 @@
     },
     "scripts": {
         "dev": "pnpm --filter ./frontend dev",
-        "build": "pnpm --filter ./frontend build"
+        "build": "pnpm --filter ./frontend build",
+        "preview": "pnpm --filter ./frontend preview"
     }
 }
