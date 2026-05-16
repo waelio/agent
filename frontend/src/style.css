@@ -1,5 +1,132 @@
-:root {
+/* ── Theme tokens ─────────────────────────────────────────────── */
+
+:root,
+[data-theme="dark"] {
   color-scheme: dark;
+
+  --bg-page:     #020617;
+  --bg-body:     #0f172a;
+  --bg-drawer:   rgba(15, 23, 42, 0.82);
+  --bg-surface:  rgba(15, 23, 42, 0.85);
+  --bg-input:    rgba(15, 23, 42, 0.9);
+  --bg-form:     rgba(2, 6, 23, 0.72);
+  --bg-link:     rgba(15, 23, 42, 0.6);
+  --bg-link-hov: rgba(30, 41, 59, 0.92);
+  --bg-backend:  rgba(15, 23, 42, 0.74);
+  --bg-reset:    rgba(51, 65, 85, 0.88);
+
+  --text-primary:   #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-accent:    #93c5fd;
+  --text-label:     #bfdbfe;
+  --text-link:      #cbd5e1;
+  --text-input:     #f8fafc;
+  --text-select:    #e2e8f0;
+  --text-hint:      #94a3b8;
+
+  --border-drawer:  rgba(148, 163, 184, 0.18);
+  --border-surface: rgba(148, 163, 184, 0.18);
+  --border-input:   rgba(148, 163, 184, 0.22);
+  --border-select:  rgba(96, 165, 250, 0.28);
+  --border-form:    rgba(148, 163, 184, 0.14);
+  --border-backend: rgba(148, 163, 184, 0.16);
+
+  --grad-body:    radial-gradient(circle at top, rgba(37,99,235,0.24), transparent 28%),
+                  linear-gradient(180deg, #020617 0%, #0f172a 100%);
+  --shadow-msg:   0 12px 30px rgba(2, 6, 23, 0.24);
+
+  --theme-btn-bg:       rgba(30, 41, 59, 0.8);
+  --theme-btn-active:   linear-gradient(135deg, #2563eb, #7c3aed);
+  --theme-btn-text:     #94a3b8;
+  --theme-btn-text-act: #ffffff;
+  --theme-btn-border:   rgba(148, 163, 184, 0.16);
+}
+
+[data-theme="dim"] {
+  color-scheme: dark;
+
+  --bg-page:     #1e2433;
+  --bg-body:     #252d3d;
+  --bg-drawer:   rgba(37, 45, 61, 0.9);
+  --bg-surface:  rgba(42, 52, 72, 0.9);
+  --bg-input:    rgba(37, 45, 61, 0.95);
+  --bg-form:     rgba(30, 36, 51, 0.88);
+  --bg-link:     rgba(37, 45, 61, 0.7);
+  --bg-link-hov: rgba(50, 62, 85, 0.95);
+  --bg-backend:  rgba(37, 45, 61, 0.8);
+  --bg-reset:    rgba(60, 75, 100, 0.88);
+
+  --text-primary:   #cdd6e8;
+  --text-secondary: #8a98b4;
+  --text-accent:    #7eb8f7;
+  --text-label:     #a8c4f0;
+  --text-link:      #b0bdd4;
+  --text-input:     #dce6f5;
+  --text-select:    #cdd6e8;
+  --text-hint:      #8a98b4;
+
+  --border-drawer:  rgba(120, 140, 180, 0.2);
+  --border-surface: rgba(120, 140, 180, 0.2);
+  --border-input:   rgba(120, 140, 180, 0.28);
+  --border-select:  rgba(80, 140, 230, 0.35);
+  --border-form:    rgba(120, 140, 180, 0.18);
+  --border-backend: rgba(120, 140, 180, 0.2);
+
+  --grad-body:    radial-gradient(circle at top, rgba(37,99,235,0.16), transparent 30%),
+                  linear-gradient(180deg, #1a2030 0%, #252d3d 100%);
+  --shadow-msg:   0 8px 24px rgba(10, 14, 26, 0.22);
+
+  --theme-btn-bg:       rgba(50, 62, 85, 0.8);
+  --theme-btn-active:   linear-gradient(135deg, #3b6fd4, #6d30c9);
+  --theme-btn-text:     #8a98b4;
+  --theme-btn-text-act: #ffffff;
+  --theme-btn-border:   rgba(120, 140, 180, 0.2);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  --bg-page:     #f0f4ff;
+  --bg-body:     #f8faff;
+  --bg-drawer:   rgba(255, 255, 255, 0.92);
+  --bg-surface:  rgba(255, 255, 255, 0.96);
+  --bg-input:    rgba(255, 255, 255, 0.98);
+  --bg-form:     rgba(240, 244, 255, 0.9);
+  --bg-link:     rgba(241, 245, 255, 0.8);
+  --bg-link-hov: rgba(224, 231, 255, 0.95);
+  --bg-backend:  rgba(255, 255, 255, 0.88);
+  --bg-reset:    rgba(210, 220, 240, 0.88);
+
+  --text-primary:   #1e293b;
+  --text-secondary: #64748b;
+  --text-accent:    #2563eb;
+  --text-label:     #1d4ed8;
+  --text-link:      #334155;
+  --text-input:     #0f172a;
+  --text-select:    #1e293b;
+  --text-hint:      #64748b;
+
+  --border-drawer:  rgba(100, 116, 139, 0.18);
+  --border-surface: rgba(100, 116, 139, 0.16);
+  --border-input:   rgba(100, 116, 139, 0.28);
+  --border-select:  rgba(37, 99, 235, 0.35);
+  --border-form:    rgba(100, 116, 139, 0.14);
+  --border-backend: rgba(100, 116, 139, 0.18);
+
+  --grad-body:    radial-gradient(circle at top, rgba(37,99,235,0.08), transparent 35%),
+                  linear-gradient(180deg, #e8eeff 0%, #f8faff 100%);
+  --shadow-msg:   0 6px 20px rgba(30, 41, 59, 0.1);
+
+  --theme-btn-bg:       rgba(226, 232, 240, 0.9);
+  --theme-btn-active:   linear-gradient(135deg, #2563eb, #7c3aed);
+  --theme-btn-text:     #64748b;
+  --theme-btn-text-act: #ffffff;
+  --theme-btn-border:   rgba(100, 116, 139, 0.2);
+}
+
+/* ── Base ─────────────────────────────────────────────────────── */
+
+:root {
   font-family:
     Inter,
     system-ui,
@@ -7,28 +134,29 @@
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-  background: #0f172a;
-  color: #e2e8f0;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: var(--bg-body);
+  color: var(--text-primary);
 }
 
 * {
   box-sizing: border-box;
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top, rgba(37, 99, 235, 0.24), transparent 28%),
-    linear-gradient(180deg, #020617 0%, #0f172a 100%);
+  background: var(--grad-body);
+  color: var(--text-primary);
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -36,6 +164,8 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+/* ── Layout ───────────────────────────────────────────────────── */
 
 .app-shell {
   min-height: 100vh;
@@ -45,8 +175,8 @@ a {
 .drawer {
   width: 260px;
   padding: 28px 18px;
-  border-right: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(15, 23, 42, 0.82);
+  border-right: 1px solid var(--border-drawer);
+  background: var(--bg-drawer);
   backdrop-filter: blur(18px);
   display: flex;
   flex-direction: column;
@@ -58,12 +188,12 @@ a {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #93c5fd;
+  color: var(--text-accent);
 }
 
 .drawer-subtitle {
   margin: -8px 0 4px;
-  color: #94a3b8;
+  color: var(--text-secondary);
   font-size: 0.92rem;
   line-height: 1.5;
 }
@@ -79,8 +209,8 @@ a {
   align-items: center;
   padding: 12px 14px;
   border-radius: 14px;
-  color: #cbd5e1;
-  background: rgba(15, 23, 42, 0.6);
+  color: var(--text-link);
+  background: var(--bg-link);
   border: 1px solid transparent;
   transition:
     border-color 0.2s ease,
@@ -91,8 +221,8 @@ a {
 
 .drawer-link:hover {
   border-color: rgba(96, 165, 250, 0.35);
-  background: rgba(30, 41, 59, 0.92);
-  color: #ffffff;
+  background: var(--bg-link-hov);
+  color: var(--text-primary);
   transform: translateY(-1px);
 }
 
@@ -107,6 +237,47 @@ a {
   display: grid;
   gap: 10px;
 }
+
+/* ── Theme switcher ───────────────────────────────────────────── */
+
+.theme-switcher {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--theme-btn-border);
+  background: var(--theme-btn-bg);
+}
+
+.theme-btn {
+  flex: 1;
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  background: transparent;
+  color: var(--theme-btn-text);
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.theme-btn:hover {
+  color: var(--text-primary);
+  transform: scale(1.04);
+}
+
+.theme-btn.is-active {
+  background: var(--theme-btn-active);
+  color: var(--theme-btn-text-act);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
+}
+
+/* ── Install / misc drawer ────────────────────────────────────── */
 
 .install-btn {
   border: 0;
@@ -134,50 +305,13 @@ a {
   box-shadow: none;
 }
 
-.account-help {
-  display: grid;
-  gap: 8px;
-}
-
-.account-help-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(56, 189, 248, 0.28);
-  background: rgba(15, 23, 42, 0.92);
-  color: #e0f2fe;
-  font-weight: 700;
-  text-align: center;
-  transition:
-    transform 0.2s ease,
-    border-color 0.2s ease,
-    background 0.2s ease,
-    color 0.2s ease;
-}
-
-.account-help-link:hover {
-  transform: translateY(-1px);
-  border-color: rgba(125, 211, 252, 0.5);
-  background: rgba(8, 47, 73, 0.88);
-  color: #ffffff;
-}
-
-.account-help-note {
-  margin: 0;
-  color: #94a3b8;
-  font-size: 0.78rem;
-  line-height: 1.5;
-}
-
 .backend-form {
   display: grid;
   gap: 10px;
   padding: 14px;
   border-radius: 18px;
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  background: rgba(15, 23, 42, 0.74);
+  border: 1px solid var(--border-backend);
+  background: var(--bg-backend);
 }
 
 .backend-label {
@@ -185,7 +319,7 @@ a {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #bfdbfe;
+  color: var(--text-label);
 }
 
 .backend-input {
@@ -193,9 +327,9 @@ a {
   min-width: 0;
   padding: 12px 14px;
   border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(2, 6, 23, 0.72);
-  color: #f8fafc;
+  border: 1px solid var(--border-input);
+  background: var(--bg-input);
+  color: var(--text-input);
   outline: none;
   transition:
     border-color 0.2s ease,
@@ -234,8 +368,8 @@ a {
 }
 
 .backend-reset {
-  background: rgba(51, 65, 85, 0.88);
-  color: #e2e8f0;
+  background: var(--bg-reset);
+  color: var(--text-primary);
 }
 
 .backend-save:hover,
@@ -253,70 +387,30 @@ a {
 .backend-status {
   margin: 0;
   min-height: 1.3rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
   font-size: 0.78rem;
   line-height: 1.5;
 }
 
-.backend-status[data-state="success"] {
-  color: #86efac;
-}
-
-.backend-status[data-state="error"] {
-  color: #fca5a5;
-}
-
-.key-help {
-  display: grid;
-  gap: 8px;
-}
-
-.key-help-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(96, 165, 250, 0.28);
-  background: rgba(30, 41, 59, 0.82);
-  color: #dbeafe;
-  font-weight: 700;
-  text-align: center;
-  transition:
-    transform 0.2s ease,
-    border-color 0.2s ease,
-    background 0.2s ease,
-    color 0.2s ease;
-}
-
-.key-help-link:hover {
-  transform: translateY(-1px);
-  border-color: rgba(125, 211, 252, 0.5);
-  background: rgba(37, 99, 235, 0.2);
-  color: #ffffff;
-}
-
-.key-help-note {
-  margin: 0;
-  color: #94a3b8;
-  font-size: 0.78rem;
-  line-height: 1.5;
-}
+.backend-status[data-state="success"] { color: #22c55e; }
+.backend-status[data-state="error"]   { color: #ef4444; }
 
 .drawer-hint {
   margin: 0;
-  color: #94a3b8;
+  color: var(--text-hint);
   font-size: 0.82rem;
   line-height: 1.5;
 }
 
 .drawer-hint code {
   font-family: "SFMono-Regular", ui-monospace, monospace;
-  background: rgba(15, 23, 42, 0.88);
+  background: var(--bg-surface);
   border-radius: 999px;
   padding: 2px 8px;
-  color: #e2e8f0;
+  color: var(--text-primary);
 }
+
+/* ── Page / chat ──────────────────────────────────────────────── */
 
 .page {
   flex: 1;
@@ -341,8 +435,8 @@ a {
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  box-shadow: 0 12px 30px rgba(2, 6, 23, 0.24);
+  border: 1px solid var(--border-surface);
+  box-shadow: var(--shadow-msg);
 }
 
 .user {
@@ -354,7 +448,8 @@ a {
 
 .agent {
   align-self: flex-start;
-  background: rgba(15, 23, 42, 0.85);
+  background: var(--bg-surface);
+  color: var(--text-primary);
 }
 
 .thinking {
@@ -362,13 +457,108 @@ a {
   font-style: italic;
 }
 
+/* ── Copy button ─────────────────────────────────────────────── */
+
+.msg-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.copy-btn {
+  align-self: flex-start;
+  border: 1px solid var(--border-select);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: var(--bg-input);
+  color: var(--text-accent);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.msg-wrapper:hover .copy-btn {
+  opacity: 1;
+}
+
+.copy-btn:hover {
+  transform: translateY(-1px);
+  background: var(--border-select);
+  color: #ffffff;
+}
+
+.copy-btn.copied {
+  opacity: 1;
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #ffffff;
+}
+
+/* ── Form / composer ──────────────────────────────────────────── */
+
 #form {
   display: flex;
-  gap: 12px;
-  padding: 18px 20px 24px;
-  border-top: 1px solid rgba(148, 163, 184, 0.14);
-  background: rgba(2, 6, 23, 0.72);
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 20px 22px;
+  border-top: 1px solid var(--border-form);
+  background: var(--bg-form);
   backdrop-filter: blur(18px);
+}
+
+#model-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#model-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-accent);
+  white-space: nowrap;
+}
+
+#model-select {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-select);
+  background: var(--bg-input);
+  color: var(--text-select);
+  font-size: 0.84rem;
+  outline: none;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
+}
+
+#model-select:focus {
+  border-color: rgba(96, 165, 250, 0.75);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+}
+
+#model-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#composer {
+  display: flex;
+  gap: 12px;
 }
 
 #input {
@@ -376,9 +566,9 @@ a {
   min-width: 0;
   padding: 14px 18px;
   border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(15, 23, 42, 0.9);
-  color: #f8fafc;
+  border: 1px solid var(--border-input);
+  background: var(--bg-input);
+  color: var(--text-input);
   font-size: 0.96rem;
   outline: none;
   transition:
@@ -419,6 +609,8 @@ a {
   transform: none;
 }
 
+/* ── Responsive ───────────────────────────────────────────────── */
+
 @media (max-width: 900px) {
   .app-shell {
     flex-direction: column;
@@ -427,7 +619,7 @@ a {
   .drawer {
     width: auto;
     border-right: 0;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+    border-bottom: 1px solid var(--border-drawer);
   }
 
   .drawer-nav {
@@ -450,10 +642,6 @@ a {
 }
 
 @media (max-width: 640px) {
-  #form {
-    flex-direction: column;
-  }
-
   .backend-actions {
     grid-template-columns: 1fr;
   }

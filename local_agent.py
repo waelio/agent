@@ -7,6 +7,8 @@ import ollama
 
 app = FastAPI()
 
+DEFAULT_MODEL = "qwen3:8b"
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -26,6 +28,17 @@ def root():
 def health():
     return {"status": "ok"}
 
+@app.get("/models")
+async def list_models():
+    """Return all locally available Ollama models."""
+    try:
+        client = ollama.AsyncClient()
+        result = await client.list()
+        models = [m.model for m in result.models]
+        return {"models": models, "default": DEFAULT_MODEL}
+    except Exception as e:
+        return {"models": [], "default": DEFAULT_MODEL, "error": str(e)}
+
 @app.post("/apps/{app_id}/users/{user_id}/sessions")
 async def create_session(app_id: str, user_id: str):
     # Returns a dummy session ID to satisfy the UI
@@ -37,14 +50,13 @@ async def run_sse(request: Request):
     new_message = data.get("new_message", {})
     parts = new_message.get("parts", [])
     user_text = parts[0].get("text", "") if parts else ""
-    
+    model = data.get("model", DEFAULT_MODEL)
+
     async def event_stream():
         try:
-            # We connect directly to Ollama running locally.
-            # We switched to 'llama3' (4.7GB) instead of 'gemma4' (9.6GB) so it easily fits in your Mac's GPU memory!
             client = ollama.AsyncClient()
             response_stream = await client.chat(
-                model='llama3:latest', 
+                model=model,
                 messages=[{'role': 'user', 'content': user_text}],
                 stream=True
             )
@@ -58,9 +70,9 @@ async def run_sse(request: Request):
                     }
                     yield f"data: {json.dumps(payload)}\n\n"
         except Exception as e:
-            payload = {"error": f"Ollama connection error: {str(e)}. Make sure Ollama is running and you have pulled the model!"}
+            payload = {"error": f"Ollama error ({model}): {str(e)}. Make sure Ollama is running and the model is pulled!"}
             yield f"data: {json.dumps(payload)}\n\n"
-            
+
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 if __name__ == "__main__":

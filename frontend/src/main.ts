@@ -4,6 +4,35 @@ import { setupPwa } from "./pwa";
 const APP_NAME = import.meta.env.VITE_AGENT_APP_NAME?.trim() || "@waelio/agent";
 const BACKEND_URL_STORAGE_KEY = "waelio-agent-backend-url";
 const USER_ID_STORAGE_KEY = "waelio-agent-user-id";
+const THEME_STORAGE_KEY = "waelio-agent-theme";
+
+type Theme = "dark" | "dim" | "light";
+
+function applyTheme(theme: Theme): void {
+  document.documentElement.setAttribute("data-theme", theme);
+  try { localStorage.setItem(THEME_STORAGE_KEY, theme); } catch { /* ignore */ }
+  document.querySelectorAll<HTMLButtonElement>(".theme-btn[data-theme]").forEach((btn) => {
+    btn.classList.toggle("is-active", btn.dataset.theme === theme);
+  });
+}
+
+function initTheme(): void {
+  let saved: Theme = "dark";
+  try {
+    const raw = localStorage.getItem(THEME_STORAGE_KEY);
+    if (raw === "dark" || raw === "dim" || raw === "light") saved = raw;
+  } catch { /* ignore */ }
+  applyTheme(saved);
+}
+
+initTheme();
+
+document.querySelectorAll<HTMLButtonElement>(".theme-btn[data-theme]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const t = btn.dataset.theme as Theme;
+    if (t === "dark" || t === "dim" || t === "light") applyTheme(t);
+  });
+});
 
 type BackendSource = "saved" | "env" | "local" | "unset";
 
@@ -136,6 +165,12 @@ interface RunSseRequest {
     parts: Array<{ text: string }>;
   };
   streaming: boolean;
+  model: string;
+}
+
+interface ModelsResponse {
+  models: string[];
+  default: string;
 }
 
 function joinUrl(baseUrl: string, path: string): string {
@@ -279,7 +314,19 @@ async function createSession(backendUrl: string, userId: string): Promise<string
   return sessionId;
 }
 
-async function generateReply(backendUrl: string, userId: string, sessionId: string, text: string): Promise<string> {
+async function fetchModels(backendUrl: string): Promise<ModelsResponse> {
+  try {
+    const res = await fetch(joinUrl(backendUrl, "models"), {
+      headers: { "ngrok-skip-browser-warning": "true" },
+    });
+    if (!res.ok) throw new Error();
+    return (await res.json()) as ModelsResponse;
+  } catch {
+    return { models: [], default: "" };
+  }
+}
+
+async function generateReply(backendUrl: string, userId: string, sessionId: string, text: string, model: string): Promise<string> {
   let response: Response;
 
   try {
@@ -298,6 +345,7 @@ async function generateReply(backendUrl: string, userId: string, sessionId: stri
           parts: [{ text }],
         },
         streaming: false,
+        model,
       } satisfies RunSseRequest),
     });
   } catch {
@@ -332,28 +380,16 @@ async function generateReply(backendUrl: string, userId: string, sessionId: stri
 
 async function renderChatPage(): Promise<void> {
   const chat = document.getElementById("chat");
-
   const form = document.getElementById("form");
   const input = document.getElementById("input");
   const btn = document.getElementById("btn");
+  const modelSelect = document.getElementById("model-select");
 
-  if (!(chat instanceof HTMLDivElement)) {
-    throw new Error("Missing #chat container.");
-  }
-
-
-
-  if (!(form instanceof HTMLFormElement)) {
-    throw new Error("Missing #form element.");
-  }
-
-  if (!(input instanceof HTMLInputElement)) {
-    throw new Error("Missing #input field.");
-  }
-
-  if (!(btn instanceof HTMLButtonElement)) {
-    throw new Error("Missing #btn button.");
-  }
+  if (!(chat instanceof HTMLDivElement)) throw new Error("Missing #chat container.");
+  if (!(form instanceof HTMLFormElement)) throw new Error("Missing #form element.");
+  if (!(input instanceof HTMLInputElement)) throw new Error("Missing #input field.");
+  if (!(btn instanceof HTMLButtonElement)) throw new Error("Missing #btn button.");
+  if (!(modelSelect instanceof HTMLSelectElement)) throw new Error("Missing #model-select.");
 
   chat.hidden = false;
   form.hidden = false;
@@ -361,11 +397,61 @@ async function renderChatPage(): Promise<void> {
 
   const defaultComposerPlaceholder = input.placeholder;
   const userId = getOrCreateUserId();
-  const backendUrl = import.meta.env.VITE_API_BASE_URL?.trim() || "https://waelio-agent.pages.dev";
+  const backendUrl = import.meta.env.VITE_API_BASE_URL?.trim() || "http://localhost:8000";
   let sessionId = "";
   let isBusy = false;
 
+  // --- Populate model selector ---
+  const { models, default: defaultModel } = await fetchModels(backendUrl);
+  if (models.length > 0) {
+    modelSelect.innerHTML = models
+      .map((m) => `<option value="${m}"${m === defaultModel ? " selected" : ""}>${m}</option>`)
+      .join("");
+  } else {
+    modelSelect.innerHTML = `<option value="qwen3:8b" selected>qwen3:8b</option>
+      <option value="gemma4:latest">gemma4:latest</option>
+      <option value="llama3:latest">llama3:latest</option>`;
+  }
+
+  const getSelectedModel = (): string => modelSelect.value;
+
   const addMsg = (text: string, role: string): HTMLDivElement => {
+    const isAgent = role.startsWith("agent") && !role.includes("thinking");
+
+    if (isAgent) {
+      const wrapper = document.createElement("div");
+      wrapper.className = "msg-wrapper";
+
+      const el = document.createElement("div");
+      el.className = `msg ${role}`;
+      el.textContent = text;
+
+      const copyBtn = document.createElement("button");
+      copyBtn.className = "copy-btn";
+      copyBtn.title = "Copy response";
+      copyBtn.textContent = "Copy";
+      copyBtn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(el.textContent ?? "");
+          copyBtn.textContent = "✓ Copied";
+          copyBtn.classList.add("copied");
+          setTimeout(() => {
+            copyBtn.textContent = "Copy";
+            copyBtn.classList.remove("copied");
+          }, 2000);
+        } catch {
+          copyBtn.textContent = "Failed";
+          setTimeout(() => { copyBtn.textContent = "Copy"; }, 2000);
+        }
+      });
+
+      wrapper.appendChild(el);
+      wrapper.appendChild(copyBtn);
+      chat.appendChild(wrapper);
+      chat.scrollTop = chat.scrollHeight;
+      return el;
+    }
+
     const el = document.createElement("div");
     el.className = `msg ${role}`;
     el.textContent = text;
@@ -374,12 +460,11 @@ async function renderChatPage(): Promise<void> {
     return el;
   };
 
-
-
   const refreshComposerState = (): void => {
     const disabled = isBusy || !backendUrl;
     btn.disabled = disabled;
     input.disabled = disabled;
+    modelSelect.disabled = isBusy;
     input.placeholder = disabled
       ? "Connect a backend to start chatting."
       : defaultComposerPlaceholder;
@@ -390,33 +475,30 @@ async function renderChatPage(): Promise<void> {
     sessionId = "";
   };
 
+  void resetChat; // suppress unused warning
+
   const setBusyState = (busy: boolean): void => {
     isBusy = busy;
     refreshComposerState();
   };
 
   const ensureSession = async (): Promise<string> => {
-    if (sessionId) {
-      return sessionId;
-    }
-
+    if (sessionId) return sessionId;
     sessionId = await createSession(backendUrl, userId);
     return sessionId;
   };
 
   const sendMessage = async (text: string): Promise<void> => {
-    if (!backendUrl) {
-      return;
-    }
+    if (!backendUrl) return;
 
+    const model = getSelectedModel();
     setBusyState(true);
     addMsg(text, "user");
-    const thinking = addMsg("Thinking...", "agent thinking");
+    const thinking = addMsg(`Thinking with ${model}…`, "agent thinking");
 
     try {
       const currentSessionId = await ensureSession();
-      const reply = await generateReply(backendUrl, userId, currentSessionId, text);
-
+      const reply = await generateReply(backendUrl, userId, currentSessionId, text, model);
       thinking.remove();
       addMsg(reply, "agent");
     } catch (error: unknown) {
@@ -429,15 +511,10 @@ async function renderChatPage(): Promise<void> {
     }
   };
 
-
-
   form.addEventListener("submit", async (event: SubmitEvent) => {
     event.preventDefault();
     const text = input.value.trim();
-    if (!text || !backendUrl) {
-      return;
-    }
-
+    if (!text || !backendUrl) return;
     input.value = "";
     await sendMessage(text);
   });
