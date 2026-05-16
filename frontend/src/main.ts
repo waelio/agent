@@ -357,7 +357,7 @@ async function renderChatPage(): Promise<void> {
 
   chat.hidden = false;
   form.hidden = false;
-  document.title = APP_NAME === "@waelio/agent" ? "Agent" : APP_NAME;
+  document.title = APP_NAME;
 
   const defaultComposerPlaceholder = input.placeholder;
   const userId = getOrCreateUserId();
