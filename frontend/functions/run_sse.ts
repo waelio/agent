@@ -3,8 +3,8 @@ export async function onRequestPost(context) {
   const data = await request.json();
   const prompt = data.new_message.parts.map(p => p.text).join('\n');
   
-  const aiResponseStream = await env.AI.run('@cf/google/gemma-7b-it', {
-      prompt: prompt,
+  const aiResponseStream = await env.AI.run('@cf/google/gemma-7b-it-lora', {
+      messages: [{ role: 'user', content: prompt }],
       stream: true
   });
   
