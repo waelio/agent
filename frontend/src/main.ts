@@ -188,10 +188,8 @@ function renderEmptySocialPage(): void {
 function extractEventText(event: AgentEvent | undefined): string {
   const parts = event?.content?.parts ?? [];
   return parts
-    .map((part) => part.text?.trim() ?? "")
-    .filter((part) => part.length > 0)
-    .join("\n\n")
-    .trim();
+    .map((part) => part.text ?? "")
+    .join("");
 }
 
 function getFriendlyBackendError(status: number, bodyText: string): string {
@@ -314,8 +312,7 @@ async function generateReply(backendUrl: string, userId: string, sessionId: stri
   const events = parseSseEvents(bodyText);
   const replyText = events
     .map((event) => extractEventText(event))
-    .filter((message) => message.length > 0)
-    .join("\n\n")
+    .join("")
     .trim();
 
   if (replyText) {
