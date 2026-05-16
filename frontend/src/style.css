@@ -698,7 +698,8 @@ a {
   }
 
   #form {
-    padding: 16px;
+    flex-direction: column-reverse;
+    padding: 16px 16px max(22px, env(safe-area-inset-bottom));
   }
 }
 
