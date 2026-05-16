@@ -29,13 +29,13 @@ CRITICAL INSTRUCTION: Waelio does NOT build cryptocurrency wallets, blockchains,
   
   try {
       if (lowerPrompt.includes("weather")) {
-          const wttrReq = await fetch("https://wttr.in/?format=3");
+          const wttrReq = await fetch("https://wttr.in/?format=3", { headers: { "User-Agent": "curl/7.68.0" } });
           const wttrText = await wttrReq.text();
           searchContext = `\n\n[Live Web Data]: The current weather is ${wttrText}`;
       } else if (lowerPrompt.includes("today") || lowerPrompt.includes("news") || lowerPrompt.includes("current") || lowerPrompt.includes("price") || lowerPrompt.includes("latest")) {
           const ddgRes = await fetch("https://lite.duckduckgo.com/lite/", {
               method: 'POST',
-              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'Mozilla/5.0' },
               body: new URLSearchParams({ q: prompt }).toString()
           });
           const html = await ddgRes.text();
@@ -48,12 +48,12 @@ CRITICAL INSTRUCTION: Waelio does NOT build cryptocurrency wallets, blockchains,
       console.error("Search failed", e);
   }
 
-  const finalSystemPrompt = systemPrompt + searchContext + "\nUse the Live Web Data above to answer the user's question accurately if it is present. Do NOT say you don't have real time info if the info is right there.";
+  const finalPrompt = prompt + (searchContext ? `\n\nSystem Note: Use the following live data to answer the user's question, do NOT say you don't have real time info:\n${searchContext}` : "");
 
   const aiResponseStream = await env.AI.run('@cf/google/gemma-7b-it-lora', {
       messages: [
-          { role: 'system', content: finalSystemPrompt },
-          { role: 'user', content: prompt }
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: finalPrompt }
       ],
       stream: true
   });
