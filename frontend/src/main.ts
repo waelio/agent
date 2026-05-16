@@ -218,7 +218,11 @@ function renderEmptySocialPage(): void {
   const form = document.getElementById("form");
 
   if (chat instanceof HTMLDivElement) {
-    chat.hidden = true;
+    chat.hidden = false;
+    chat.innerHTML = `<div style="padding: 40px 20px; text-align: center; color: var(--text-secondary);">
+      <h2>Social</h2>
+      <p>Social features and models are coming soon.</p>
+    </div>`;
   }
 
   if (form instanceof HTMLFormElement) {
