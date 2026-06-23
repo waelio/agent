@@ -4,6 +4,20 @@ All notable changes to `@waelio/agent` will be documented in this file.
 
 The format is based on Keep a Changelog, and versions in this file track package releases from `frontend/package.json`.
 
+## [0.2.2] - 2026-06-23
+
+### Added
+
+- **Live web search** — local backend and Cloudflare Pages function search the web automatically for current events, health, and research questions
+- **Allowed site fetching** — direct reads from `webmd.com` and `waelio.com` when URLs or health topics are mentioned
+- **Social tab** — working links to Waelio Chat, waelio.com, GitHub, and npm (replaces blank placeholder page)
+- **`requirements.txt`** — documents Python backend dependencies for `local_agent.py`
+
+### Changed
+
+- Web search uses DuckDuckGo HTML results after the old search library stopped returning data
+- Backend CORS allows all `*.waelio.com` subdomains
+
 ## [0.2.0] - 2026-05-16
 
 ### Added
