@@ -1,16 +1,34 @@
 import os
 import json
 import uuid
+import re
+import html
+import urllib.parse
+import urllib.request
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 import ollama
-from duckduckgo_search import DDGS
 
 app = FastAPI()
 
 KNOWLEDGE_DIR = "knowledge"
 DEFAULT_MODEL = "qwen3:8b"
+
+WEB_SEARCH_HINTS = re.compile(
+    r"\b(today|now|current|currently|latest|recent|news|weather|price|score|stock|"
+    r"who is|what is|when did|how much|look up|search|find online|internet|website|"
+    r"online|live|happening|update|waelio\.com|webmd|health|medical|symptom|symptoms|"
+    r"disease|treatment|diagnosis|medicine|drug|drugs|doctor|pain|sleep|diabetes|"
+    r"cancer|allergy|allergies)\b",
+    re.IGNORECASE,
+)
+URL_PATTERN = re.compile(r'https?://[^\s<>"\']+', re.IGNORECASE)
+ALLOWED_FETCH_HOSTS = ("webmd.com", "waelio.com")
+SMALL_TALK = re.compile(
+    r"^(hi|hello|hey|thanks|thank you|ok|okay|bye|good morning|good night)\b",
+    re.IGNORECASE,
+)
 
 def load_knowledge():
     """Reads all markdown files in the knowledge directory to inject as context."""
@@ -26,13 +44,153 @@ def load_knowledge():
                     pass
     return context
 
+def needs_web_search(text: str) -> bool:
+    prompt = text.strip()
+    if len(prompt) < 4:
+        return False
+    if SMALL_TALK.match(prompt):
+        return False
+    return bool(WEB_SEARCH_HINTS.search(prompt) or "?" in prompt)
+
+def parse_tool_arguments(raw) -> dict:
+    if isinstance(raw, str):
+        try:
+            parsed = json.loads(raw)
+            return parsed if isinstance(parsed, dict) else {}
+        except json.JSONDecodeError:
+            return {}
+    return raw if isinstance(raw, dict) else {}
+
+def strip_html(value: str) -> str:
+    return re.sub(r"<[^>]+>", "", value)
+
+def normalize_host(host: str) -> str:
+    return host.lower().removeprefix("www.")
+
+def is_allowed_fetch_url(url: str) -> bool:
+    try:
+        parsed = urllib.parse.urlparse(url)
+    except ValueError:
+        return False
+
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        return False
+
+    host = normalize_host(parsed.netloc)
+    return any(host == allowed or host.endswith(f".{allowed}") for allowed in ALLOWED_FETCH_HOSTS)
+
+def extract_urls(text: str) -> list[str]:
+    return URL_PATTERN.findall(text)
+
+def html_to_text(page: str, limit: int = 4000) -> str:
+    cleaned = re.sub(r"(?is)<(script|style).*?>.*?</\1>", " ", page)
+    text = strip_html(cleaned)
+    text = html.unescape(text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text[:limit]
+
+def fetch_allowed_url(url: str) -> str:
+    if not is_allowed_fetch_url(url):
+        return f"Fetching is not allowed for {url}."
+
+    try:
+        request = urllib.request.Request(
+            url,
+            headers={"User-Agent": "Mozilla/5.0"},
+        )
+        page = urllib.request.urlopen(request, timeout=15).read().decode("utf-8", "ignore")
+        text = html_to_text(page)
+        if not text:
+            return f"Fetched {url} but no readable text was found."
+        return f"Fetched {url}:\n{text}"
+    except Exception as e:
+        return f"Failed to fetch {url}: {e}"
+
+def gather_web_context(user_text: str) -> tuple[str | None, list[str]]:
+    parts: list[str] = []
+    status: list[str] = []
+
+    for url in extract_urls(user_text):
+        if is_allowed_fetch_url(url):
+            status.append(f"*🌐 Fetching:* `{url}`")
+            parts.append(fetch_allowed_url(url))
+
+    if "webmd" in user_text.lower() and not any("webmd.com" in url for url in extract_urls(user_text)):
+        webmd_url = "https://www.webmd.com/"
+        status.append(f"*🌐 Fetching:* `{webmd_url}`")
+        parts.append(fetch_allowed_url(webmd_url))
+
+    query = user_text.strip()
+    if needs_web_search(query):
+        status.append(f"*🔍 Searching the web for:* `{query}`")
+        parts.append(web_search(query))
+
+    if not parts:
+        return None, status
+
+    return "\n\n".join(parts), status
+
 def web_search(query: str) -> str:
     """Search the web for the given query and return a summary."""
     try:
-        results = DDGS().text(query, max_results=3)
-        return json.dumps(list(results))
+        body = urllib.parse.urlencode({"q": query}).encode()
+        request = urllib.request.Request(
+            "https://html.duckduckgo.com/html/",
+            data=body,
+            headers={
+                "User-Agent": "Mozilla/5.0",
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+        )
+        page = urllib.request.urlopen(request, timeout=15).read().decode("utf-8", "ignore")
+        links = re.findall(
+            r'class="result__a"[^>]*href="([^"]+)"[^>]*>(.*?)</a>',
+            page,
+            re.S,
+        )
+        snippets = re.findall(
+            r'class="result__snippet"[^>]*>(.*?)</(?:a|td|div)>',
+            page,
+            re.S,
+        )
+
+        lines = []
+        for index, (href, title) in enumerate(links[:5], start=1):
+            snippet = strip_html(html.unescape(snippets[index - 1])) if index - 1 < len(snippets) else ""
+            clean_title = strip_html(html.unescape(title))
+            clean_href = html.unescape(href)
+            block = f"{index}. {clean_title}\n{clean_href}"
+            if snippet:
+                block += f"\n{snippet}"
+            lines.append(block)
+
+        if not lines:
+            return "No web results were found for that query."
+
+        return "\n\n".join(lines)
     except Exception as e:
         return f"Search failed: {e}"
+
+def build_system_prompt() -> str:
+    return (
+        "You are Waelio's personal AI agent with live internet search.\n"
+        "When web search results are provided, use them and cite what you found.\n"
+        "Never say you lack internet access when search results are included.\n"
+        "For medical or health content from WebMD, summarize carefully and remind the "
+        "user that WebMD is general information only, not medical advice.\n"
+        "Use the following personal knowledge base about Waelio when relevant:\n"
+        f"{load_knowledge()}\n"
+    )
+
+def build_user_message(user_text: str, search_context: str | None = None) -> str:
+    if not search_context:
+        return user_text
+    return (
+        f"{user_text}\n\n"
+        "[Live web search results]\n"
+        f"{search_context}\n\n"
+        "Answer using the live web search results above when they are relevant."
+    )
 
 app.add_middleware(
     CORSMiddleware,
@@ -95,17 +253,14 @@ async def run_sse(request: Request):
     async def event_stream():
         try:
             client = ollama.AsyncClient()
-            
-            # 1. Prepare system prompt with knowledge base
-            system_prompt = (
-                "You are Waelio's personal AI agent. "
-                "Use the following personal knowledge base about Waelio if relevant to the user's query:\n"
-                f"{load_knowledge()}\n"
-            )
-            
+            search_context, status_messages = gather_web_context(user_text)
+
+            for status in status_messages:
+                yield f"data: {json.dumps({'content': {'parts': [{'text': f'\\n{status}\\n\\n'}]}})}\n\n"
+
             messages = [
-                {'role': 'system', 'content': system_prompt},
-                {'role': 'user', 'content': user_text}
+                {'role': 'system', 'content': build_system_prompt()},
+                {'role': 'user', 'content': build_user_message(user_text, search_context)}
             ]
 
             tool_schema = {
@@ -126,7 +281,6 @@ async def run_sse(request: Request):
                 }
             }
 
-            # 2. Ask model (non-streaming first) if it wants to use a tool
             response = await client.chat(
                 model=model,
                 messages=messages,
@@ -138,27 +292,21 @@ async def run_sse(request: Request):
 
             if tool_calls:
                 messages.append(msg)
-                
-                # Execute each tool
+
                 for tool in tool_calls:
                     func = tool.get('function', {})
                     if func.get('name') == 'web_search':
-                        query = func.get('arguments', {}).get('query', '')
+                        args = parse_tool_arguments(func.get('arguments', {}))
+                        query = args.get('query', '').strip()
                         if query:
-                            # Notify UI that we are searching
                             yield f"data: {json.dumps({'content': {'parts': [{'text': f'\\n*🔍 Searching the web for:* `{query}`\\n\\n'}]}})}\n\n"
-                            
-                            # Perform search
                             search_res = web_search(query)
-                            
-                            # Append tool response
                             messages.append({
                                 'role': 'tool',
                                 'content': search_res,
                                 'name': 'web_search'
                             })
-                
-                # Now stream the final response given the tool results
+
                 response_stream = await client.chat(
                     model=model,
                     messages=messages,
@@ -169,7 +317,6 @@ async def run_sse(request: Request):
                     if content:
                         yield f"data: {json.dumps({'content': {'parts': [{'text': content}]}})}\n\n"
             else:
-                # No tool calls, just yield the content it generated
                 content = msg.get('content', '')
                 if content:
                     yield f"data: {json.dumps({'content': {'parts': [{'text': content}]}})}\n\n"

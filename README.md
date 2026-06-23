@@ -90,7 +90,7 @@ Create and activate the Python virtual environment:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install fastapi uvicorn ollama
+pip install -r requirements.txt
 ```
 
 ### 2. Pull at least one model

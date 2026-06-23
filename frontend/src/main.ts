@@ -209,23 +209,115 @@ function syncDrawerLinks(activePath: string): void {
   });
 }
 
-function renderEmptySocialPage(): void {
+function hideAnswerNav(): void {
+  const answerNav = document.getElementById("answer-nav");
+  if (answerNav instanceof HTMLDivElement) {
+    answerNav.hidden = true;
+  }
+}
+
+interface SocialLink {
+  label: string;
+  description: string;
+  href: string;
+  iconId: string;
+}
+
+const SOCIAL_LINKS: SocialLink[] = [
+  {
+    label: "Waelio Chat",
+    description: "Direct messages on waelio.com. No WhatsApp or third-party social apps.",
+    href: "https://waelio.com/chat",
+    iconId: "social-icon",
+  },
+  {
+    label: "waelio.com",
+    description: "Live npm package stats and docs for the @waelio ecosystem.",
+    href: "https://waelio.com/",
+    iconId: "documentation-icon",
+  },
+  {
+    label: "GitHub",
+    description: "Open-source repos, issues, and project updates.",
+    href: "https://github.com/waelio",
+    iconId: "github-icon",
+  },
+  {
+    label: "npm",
+    description: "Install and explore @waelio/agent and other packages.",
+    href: "https://www.npmjs.com/~waelio",
+    iconId: "documentation-icon",
+  },
+];
+
+function renderSocialPage(): void {
   const chat = document.getElementById("chat");
   const form = document.getElementById("form");
 
-  if (chat instanceof HTMLDivElement) {
-    chat.hidden = false;
-    chat.innerHTML = `<div style="padding: 40px 20px; text-align: center; color: var(--text-secondary);">
-      <h2>Social</h2>
-      <p>Social features and models are coming soon.</p>
-    </div>`;
+  if (!(chat instanceof HTMLDivElement)) {
+    throw new Error("Missing #chat container.");
   }
+
+  hideAnswerNav();
+  chat.hidden = false;
+  chat.innerHTML = "";
+
+  const panel = document.createElement("section");
+  panel.className = "social-panel";
+  panel.setAttribute("aria-labelledby", "social-title");
+
+  const heading = document.createElement("h2");
+  heading.id = "social-title";
+  heading.className = "social-title";
+  heading.textContent = "Social";
+
+  const intro = document.createElement("p");
+  intro.className = "social-intro";
+  intro.textContent = "Connect with Waelio outside the chat tab.";
+
+  const list = document.createElement("div");
+  list.className = "social-links";
+
+  for (const link of SOCIAL_LINKS) {
+    const anchor = document.createElement("a");
+    anchor.className = "social-link";
+    anchor.href = link.href;
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+
+    const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    icon.classList.add("social-link-icon");
+    icon.setAttribute("aria-hidden", "true");
+    const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    use.setAttribute("href", `/icons.svg#${link.iconId}`);
+    icon.appendChild(use);
+
+    const copy = document.createElement("div");
+    copy.className = "social-link-copy";
+
+    const title = document.createElement("strong");
+    title.textContent = link.label;
+
+    const description = document.createElement("span");
+    description.textContent = link.description;
+
+    copy.appendChild(title);
+    copy.appendChild(description);
+    anchor.appendChild(icon);
+    anchor.appendChild(copy);
+    list.appendChild(anchor);
+  }
+
+  panel.appendChild(heading);
+  panel.appendChild(intro);
+  panel.appendChild(list);
+  chat.appendChild(panel);
 
   if (form instanceof HTMLFormElement) {
     form.hidden = true;
   }
 
-  document.title = "Social";
+  document.title = "Social · @waelio/agent";
 }
 
 function extractEventText(event: AgentEvent | undefined): string {
@@ -609,7 +701,7 @@ const activePath = pathname === "/social" ? "/social" : "/";
 syncDrawerLinks(activePath);
 
 if (pathname === "/social") {
-  renderEmptySocialPage();
+  renderSocialPage();
 } else {
   renderChatPage().catch((error: unknown) => {
     const message = error instanceof Error ? error.message : "Unexpected error.";

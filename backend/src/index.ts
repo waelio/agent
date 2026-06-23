@@ -54,7 +54,7 @@ const SESSION_PATH_PATTERN = /^\/apps\/[^/]+\/users\/[^/]+\/sessions\/?$/;
 const ALLOWED_ORIGIN_PATTERNS = [
     /^https:\/\/(?:[a-z0-9-]+\.)?waelio-agent\.pages\.dev$/i,
     /^https:\/\/(?:[a-z0-9-]+\.)?waelio-com\.pages\.dev$/i,
-    /^https:\/\/(?:www\.)?waelio\.com$/i,
+    /^https:\/\/(?:[a-z0-9-]+\.)*waelio\.com$/i,
     /^http:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?$/i,
 ];
 

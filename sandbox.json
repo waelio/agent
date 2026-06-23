@@ -1,0 +1,12 @@
+{
+  "networkPolicy": {
+    "default": "allow",
+    "allow": [
+      "*.waelio.com",
+      "waelio.com",
+      "webmd.com",
+      "www.webmd.com",
+      "*.webmd.com"
+    ]
+  }
+}

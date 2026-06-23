@@ -547,6 +547,80 @@ a {
   color: #ffffff;
 }
 
+/* ── Social page ──────────────────────────────────────────────── */
+
+.social-panel {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 12px 0 32px;
+  display: grid;
+  gap: 18px;
+}
+
+.social-title {
+  margin: 0;
+  font-size: 1.6rem;
+  color: var(--text-primary);
+}
+
+.social-intro {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  font-size: 1rem;
+}
+
+.social-links {
+  display: grid;
+  gap: 12px;
+}
+
+.social-link {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid var(--border-surface);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-msg);
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.social-link:hover {
+  border-color: rgba(96, 165, 250, 0.45);
+  background: var(--bg-link-hov);
+  transform: translateY(-1px);
+}
+
+.social-link-icon {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  margin-top: 2px;
+}
+
+.social-link-copy {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.social-link-copy strong {
+  font-size: 1rem;
+  color: var(--text-accent);
+}
+
+.social-link-copy span {
+  color: var(--text-secondary);
+  line-height: 1.55;
+  font-size: 0.95rem;
+}
+
 /* ── Form / composer ──────────────────────────────────────────── */
 
 #form {

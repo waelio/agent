@@ -13,22 +13,13 @@ test.describe('Agent Frontend', () => {
     await expect(drawerTitle).toHaveText('@waelio/agent');
   });
 
-  test('can submit a chat message', async ({ page }) => {
-    await page.goto('/');
+  test('social tab shows links', async ({ page }) => {
+    await page.goto('/social');
 
-    const input = page.locator('#input');
-    await input.fill('Hello, Researcher!');
-    
-    // Check if button works
-    const submitBtn = page.locator('#btn');
-    await expect(submitBtn).toBeVisible();
-    
-    // For now we just test that the form can be submitted 
-    // We don't have a real backend responding in the test environment
-    await submitBtn.click();
-    
-    // Input should be cleared or disabled depending on implementation,
-    // but at minimum the input exists.
-    await expect(input).toBeVisible();
+    await expect(page).toHaveTitle(/Social/);
+    await expect(page.locator('.social-title')).toHaveText('Social');
+    await expect(page.locator('.social-link')).toHaveCount(4);
+    await expect(page.locator('a.social-link[href="https://waelio.com/chat"]')).toBeVisible();
+    await expect(page.locator('#form')).toBeHidden();
   });
 });
