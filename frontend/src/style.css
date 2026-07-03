@@ -138,7 +138,6 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: var(--bg-body);
   color: var(--text-primary);
 }
 
@@ -163,6 +162,7 @@ html, body {
   width: 100%;
   overflow: hidden;
   position: relative;
+  background: var(--grad-body);
 }
 
 button,
@@ -482,6 +482,9 @@ a {
   word-break: break-word;
   border: 1px solid var(--border-surface);
   box-shadow: var(--shadow-msg);
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
 }
 
 .user {
@@ -522,7 +525,7 @@ a {
   background: var(--bg-input);
   color: var(--text-accent);
   cursor: pointer;
-  opacity: 0;
+  opacity: 0.35;
   transition:
     opacity 0.2s ease,
     background 0.2s ease,
@@ -530,7 +533,8 @@ a {
     transform 0.15s ease;
 }
 
-.msg-wrapper:hover .copy-btn {
+.msg-wrapper:hover .copy-btn,
+.copy-btn:focus-visible {
   opacity: 1;
 }
 
