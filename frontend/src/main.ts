@@ -546,6 +546,19 @@ async function renderChatPage(): Promise<void> {
       <option value="llama3:latest">llama3:latest</option>`;
   }
 
+  // ── Smart scroll ───────────────────────────────────────────────
+  // Only auto-scroll to bottom when the user is already near the
+  // bottom (≤ 120px away). If they've scrolled up to read/copy an
+  // earlier message, we leave their position untouched.
+  const isNearBottom = (): boolean =>
+    chat.scrollHeight - chat.scrollTop - chat.clientHeight <= 120;
+
+  const scrollToBottomIfNeeded = (): void => {
+    if (isNearBottom()) {
+      chat.scrollTop = chat.scrollHeight;
+    }
+  };
+
   const getSelectedModel = (): string => modelSelect.value;
 
   const addMsg = (text: string, role: string): HTMLDivElement => {
@@ -563,7 +576,9 @@ async function renderChatPage(): Promise<void> {
       copyBtn.className = "copy-btn";
       copyBtn.title = "Copy response";
       copyBtn.textContent = "Copy";
-      copyBtn.addEventListener("click", async () => {
+      copyBtn.addEventListener("click", async (e) => {
+        // Prevent the click from shifting scroll position via focus
+        e.preventDefault();
         try {
           await navigator.clipboard.writeText(el.textContent ?? "");
           copyBtn.textContent = "✓ Copied";
@@ -581,7 +596,7 @@ async function renderChatPage(): Promise<void> {
       wrapper.appendChild(el);
       wrapper.appendChild(copyBtn);
       chat.appendChild(wrapper);
-      chat.scrollTop = chat.scrollHeight;
+      scrollToBottomIfNeeded();
 
       // Track for navigation
       answerWrappers.push(wrapper);
@@ -595,7 +610,7 @@ async function renderChatPage(): Promise<void> {
     el.className = `msg ${role}`;
     el.textContent = text;
     chat.appendChild(el);
-    chat.scrollTop = chat.scrollHeight;
+    scrollToBottomIfNeeded();
     return el;
   };
 

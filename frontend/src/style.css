@@ -412,6 +412,8 @@ a {
 .page {
   flex: 1;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -466,7 +468,9 @@ a {
 
 #chat {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 32px;
   display: flex;
   flex-direction: column;
